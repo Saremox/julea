@@ -39,7 +39,8 @@ G_BEGIN_DECLS
 enum JBackendType
 {
 	J_BACKEND_TYPE_OBJECT,
-	J_BACKEND_TYPE_KV
+	J_BACKEND_TYPE_KV,
+	J_BACKEND_TYPE_SMD
 };
 
 typedef enum JBackendType JBackendType;
@@ -47,7 +48,7 @@ typedef enum JBackendType JBackendType;
 enum JBackendComponent
 {
 	J_BACKEND_COMPONENT_CLIENT = 1 << 0,
-	J_BACKEND_COMPONENT_SERVER = 1 << 1
+	J_BACKEND_COMPONENT_SERVER = 1 << 1,
 };
 
 typedef enum JBackendComponent JBackendComponent;
@@ -96,6 +97,27 @@ struct JBackend
 			gboolean (*backend_iterate) (gpointer, bson_t*);
 		}
 		kv;
+
+		struct
+		{
+			gboolean (*backend_init) (gchar const*);
+			void (*backend_fini) (void);
+
+			gboolean (*backend_apply_scheme) (bson_t const*);
+			gboolean (*backend_get_scheme) (bson_t*);
+
+			gboolean (*backend_insert) (bson_t const*);
+			gboolean (*backend_update) (bson_t const*);
+			gboolean (*backend_delete) (bson_t const*);
+
+			gboolean (*backend_get) (bson_t*);
+			gboolean (*backend_search) (bson_t*, gpointer*);
+			gboolean (*backend_get_all) (gpointer*);
+			gboolean (*backend_iterate) (gpointer, bson_t*);
+
+			gboolean (*backend_error) (bson_t*);
+		}
+		smd;
 	};
 };
 
@@ -135,6 +157,24 @@ gboolean j_backend_kv_get (JBackend*, gchar const*, gchar const*, bson_t*);
 gboolean j_backend_kv_get_all (JBackend*, gchar const*, gpointer*);
 gboolean j_backend_kv_get_by_prefix (JBackend*, gchar const*, gchar const*, gpointer*);
 gboolean j_backend_kv_iterate (JBackend*, gpointer, bson_t*);
+
+
+gboolean j_backend_smd_init (JBackend*,gchar const*);
+void 		 j_backend_smd_fini (JBackend*);
+
+gboolean j_backend_smd_apply_scheme (JBackend*,bson_t const*);
+gboolean j_backend_smd_get_scheme (JBackend*,bson_t*);
+
+gboolean j_backend_smd_insert (JBackend*,bson_t const*);
+gboolean j_backend_smd_update (JBackend*,bson_t const*);
+gboolean j_backend_smd_delete (JBackend*,bson_t const*);
+
+gboolean j_backend_smd_get (JBackend*,bson_t*);
+gboolean j_backend_smd_search (JBackend*,bson_t*, gpointer*);
+gboolean j_backend_smd_get_all (JBackend*,gpointer*);
+gboolean j_backend_smd_iterate (JBackend*,gpointer, bson_t*);
+
+gboolean j_backend_smd_error (bson_t*);
 
 G_END_DECLS
 
