@@ -110,9 +110,7 @@ struct JBackend
 			gboolean (*backend_update) (bson_t const*);
 			gboolean (*backend_delete) (bson_t const*);
 
-			gboolean (*backend_get) (bson_t*);
 			gboolean (*backend_search) (bson_t*, gpointer*);
-			gboolean (*backend_get_all) (gpointer*);
 			gboolean (*backend_iterate) (gpointer, bson_t*);
 
 			gboolean (*backend_error) (bson_t*);
@@ -169,9 +167,7 @@ gboolean j_backend_smd_insert (JBackend*,bson_t const*);
 gboolean j_backend_smd_update (JBackend*,bson_t const*);
 gboolean j_backend_smd_delete (JBackend*,bson_t const*);
 
-gboolean j_backend_smd_get (JBackend*,bson_t*);
 gboolean j_backend_smd_search (JBackend*,bson_t*, gpointer*);
-gboolean j_backend_smd_get_all (JBackend*,gpointer*);
 gboolean j_backend_smd_iterate (JBackend*,gpointer, bson_t*);
 
 gboolean j_backend_smd_error (bson_t*);

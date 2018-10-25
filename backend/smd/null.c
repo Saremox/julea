@@ -78,21 +78,7 @@ backend_delete (bson_t const*)
 
 static
 gboolean 
-backend_get (bson_t*)
-{
-
-}
-
-static
-gboolean 
 backend_search (bson_t*, gpointer*)
-{
-
-}
-
-static
-gboolean 
-backend_get_all (gpointer*)
 {
 
 }
