@@ -29,7 +29,7 @@
 
 static
 gboolean 
-backend_init (gchar const*)
+backend_init (gchar const* path)
 {
 
 }
@@ -43,56 +43,56 @@ backend_fini (void)
 
 static
 gboolean 
-backend_apply_scheme (bson_t const*)
+backend_apply_scheme (gchar const* namespace, bson_t const* scheme)
 {
 
 }
 
 static
 gboolean 
-backend_get_scheme (bson_t*)
+backend_get_scheme (gchar const* namespace, bson_t* scheme)
 {
 
 }
 
 static
 gboolean 
-backend_insert (bson_t const*)
+backend_insert (gchar const* namespace, bson_t const* node)
 {
 
 }
 
 static
 gboolean 
-backend_update (bson_t const*)
+backend_update (gchar const* namespace, bson_t const* node)
 {
 
 }
 
 static
 gboolean 
-backend_delete (bson_t const*)
+backend_delete (gchar const* namespace, bson_t const* node)
 {
 
 }
 
 static
 gboolean 
-backend_search (bson_t*, gpointer*)
+backend_search (bson_t* args, gpointer* result_pointer)
 {
 
 }
 
 static
 gboolean 
-backend_iterate (gpointer, bson_t*)
+backend_iterate (gpointer result_pointer, bson_t* result_item)
 {
 
 }
 
 static
 gboolean 
-backend_error (bson_t*)
+backend_error (bson_t* error_item)
 {
 
 }
@@ -109,9 +109,7 @@ JBackend null_backend = {
 		.backend_insert = backend_insert,
 		.backend_update = backend_update,
 		.backend_delete = backend_delete,
-		.backend_get = backend_get,
 		.backend_search = backend_search,
-		.backend_get_all = backend_get_all,
     .backend_iterate = backend_iterate,
     .backend_error = backend_error
 	}
