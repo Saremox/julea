@@ -57,6 +57,8 @@ j_backend_load (gchar const* name, JBackendComponent component, JBackendType typ
 		case J_BACKEND_TYPE_KV:
 			type_str = "kv";
 			break;
+		case J_BACKEND_TYPE_SMD:
+			type_str = "smd";
 		default:
 			g_warn_if_reached();
 	}
@@ -133,6 +135,23 @@ j_backend_load (gchar const* name, JBackendComponent component, JBackendType typ
 		    || tmp_backend->kv.backend_get_all == NULL
 		    || tmp_backend->kv.backend_get_by_prefix == NULL
 		    || tmp_backend->kv.backend_iterate == NULL)
+		{
+			goto error;
+		}
+	}
+
+	if (type == J_BACKEND_TYPE_SMD)
+	{
+		if (tmp_backend->smd.backend_init == NULL
+		    || tmp_backend->smd.backend_fini == NULL
+				|| tmp_backend->smd.backend_apply_scheme == NULL
+				|| tmp_backend->smd.backend_get_scheme == NULL
+				|| tmp_backend->smd.backend_insert == NULL
+				|| tmp_backend->smd.backend_update == NULL
+				|| tmp_backend->smd.backend_delete == NULL
+				|| tmp_backend->smd.backend_search == NULL
+				|| tmp_backend->smd.backend_iterate == NULL
+				|| tmp_backend->smd.backend_error == NULL)
 		{
 			goto error;
 		}
