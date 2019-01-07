@@ -45,9 +45,11 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(JConfiguration, j_configuration_unref)
 
 gchar const* j_configuration_get_object_server (JConfiguration*, guint32);
 gchar const* j_configuration_get_kv_server (JConfiguration*, guint32);
+gchar const* j_configuration_get_smd_server (JConfiguration*, guint32);
 
 guint32 j_configuration_get_object_server_count (JConfiguration*);
 guint32 j_configuration_get_kv_server_count (JConfiguration*);
+guint32 j_configuration_get_smd_server_count (JConfiguration*);
 
 gchar const* j_configuration_get_object_backend (JConfiguration*);
 gchar const* j_configuration_get_object_component (JConfiguration*);
@@ -58,6 +60,10 @@ gchar const* j_configuration_get_kv_component (JConfiguration*);
 gchar const* j_configuration_get_kv_path (JConfiguration*);
 
 guint64 j_configuration_get_max_operation_size (JConfiguration*);
+gchar const* j_configuration_get_smd_backend (JConfiguration*);
+gchar const* j_configuration_get_smd_component (JConfiguration*);
+gchar const* j_configuration_get_smd_path (JConfiguration*);
+
 guint32 j_configuration_get_max_connections (JConfiguration*);
 guint64 j_configuration_get_stripe_size (JConfiguration*);
 

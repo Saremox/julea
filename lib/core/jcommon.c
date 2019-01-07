@@ -58,9 +58,11 @@ struct JCommon
 
 	JBackend* object_backend;
 	JBackend* kv_backend;
+	JBackend* smd_backend;
 
 	GModule* object_module;
 	GModule* kv_module;
+	GModule* smd_module;
 };
 
 static JCommon* j_common = NULL;
@@ -132,6 +134,9 @@ j_init (void)
 	gchar const* kv_backend;
 	gchar const* kv_component;
 	gchar const* kv_path;
+	gchar const* smd_backend;
+	gchar const* smd_component;
+	gchar const* smd_path;
 
 	if (j_is_initialized())
 	{
@@ -161,6 +166,10 @@ j_init (void)
 	kv_component = j_configuration_get_kv_component(common->configuration);
 	kv_path = j_configuration_get_kv_path(common->configuration);
 
+	smd_backend = j_configuration_get_smd_backend(common->configuration);
+	smd_component = j_configuration_get_smd_component(common->configuration);
+	smd_path = j_configuration_get_smd_path(common->configuration);
+
 	if (j_backend_load_client(object_backend, object_component, J_BACKEND_TYPE_OBJECT, &(common->object_module), &(common->object_backend)))
 	{
 		if (common->object_backend == NULL || !j_backend_object_init(common->object_backend, object_path))
@@ -173,6 +182,15 @@ j_init (void)
 	if (j_backend_load_client(kv_backend, kv_component, J_BACKEND_TYPE_KV, &(common->kv_module), &(common->kv_backend)))
 	{
 		if (common->kv_backend == NULL || !j_backend_kv_init(common->kv_backend, kv_path))
+		{
+			J_CRITICAL("Could not initialize kv backend %s.\n", kv_backend);
+			goto error;
+		}
+	}
+
+	if (j_backend_load_client(smd_backend, smd_component, J_BACKEND_TYPE_KV, &(common->smd_module), &(common->smd_backend)))
+	{
+		if (common->smd_backend == NULL || !j_backend_smd_init(common->smd_backend, smd_path))
 		{
 			J_CRITICAL("Could not initialize kv backend %s.\n", kv_backend);
 			goto error;

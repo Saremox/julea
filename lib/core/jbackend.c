@@ -59,6 +59,7 @@ j_backend_load (gchar const* name, JBackendComponent component, JBackendType typ
 			break;
 		case J_BACKEND_TYPE_SMD:
 			type_str = "smd";
+			break;
 		default:
 			g_warn_if_reached();
 	}
@@ -541,6 +542,22 @@ j_backend_kv_iterate (JBackend* backend, gpointer iterator, bson_t* value)
 	j_trace_enter("backend_iterate", "%p, %p", iterator, (gpointer)value);
 	ret = backend->kv.backend_iterate(iterator, value);
 	j_trace_leave("backend_iterate");
+
+	return ret;
+}
+
+gboolean
+j_backend_smd_init (JBackend* backend, gchar const* path)
+{
+	gboolean ret;
+
+	g_return_val_if_fail(backend != NULL, FALSE);
+	g_return_val_if_fail(backend->type == J_BACKEND_TYPE_SMD, FALSE);
+	g_return_val_if_fail(path != NULL, FALSE);
+
+	j_trace_enter("smd_init", "%s", path);
+	ret = backend->kv.backend_init(path);
+	j_trace_leave("smd_init");
 
 	return ret;
 }
