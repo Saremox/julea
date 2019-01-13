@@ -38,6 +38,7 @@ static JConfiguration* jd_configuration;
 
 static JBackend* jd_object_backend;
 static JBackend* jd_kv_backend;
+static JBackend* jd_smd_backend;
 
 static guint jd_thread_num = 0;
 
@@ -438,6 +439,12 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 						j_message_append_n(reply, "kv", 3);
 					}
 
+					if (jd_smd_backend != NULL)
+					{
+						j_message_add_operation(reply, 3);
+						j_message_append_n(reply, "smd", 3);
+					}
+
 					j_message_send(reply, connection);
 				}
 				break;
@@ -601,6 +608,41 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 					j_message_send(reply, connection);
 				}
 				break;
+			case J_MESSAGE_SMD_SCHEMA_APPLY:
+				{
+					g_autoptr(JMessage) reply = NULL;
+					reply = j_message_new_reply(message);
+					namespace = j_message_get_string(message);
+				}
+				break;
+			case J_MESSAGE_SMD_SCHEMA_GET:
+				{
+					g_autoptr(JMessage) reply = NULL;
+					reply = j_message_new_reply(message);
+					namespace = j_message_get_string(message);
+				}
+				break;
+			case J_MESSAGE_SMD_INSERT:
+				{
+					g_autoptr(JMessage) reply = NULL;
+					reply = j_message_new_reply(message);
+					namespace = j_message_get_string(message);
+				}
+				break;
+			case J_MESSAGE_SMD_UPDATE:
+				{
+					g_autoptr(JMessage) reply = NULL;
+					reply = j_message_new_reply(message);
+					namespace = j_message_get_string(message);
+				}
+				break;
+			case J_MESSAGE_SMD_GET:
+				{
+					g_autoptr(JMessage) reply = NULL;
+					reply = j_message_new_reply(message);
+					namespace = j_message_get_string(message);
+				}
+				break;
 			default:
 				g_warn_if_reached();
 				break;
@@ -697,6 +739,7 @@ main (int argc, char** argv)
 	g_autoptr(GMainLoop) main_loop = NULL;
 	GModule* object_module = NULL;
 	GModule* kv_module = NULL;
+	GModule* smd_module = NULL;
 	g_autoptr(GOptionContext) context = NULL;
 	g_autoptr(GSocketService) socket_service = NULL;
 	gchar const* object_backend;
@@ -705,9 +748,13 @@ main (int argc, char** argv)
 	gchar const* kv_backend;
 	gchar const* kv_component;
 	gchar const* kv_path;
+	gchar const* smd_backend;
+	gchar const* smd_component;
+	gchar const* smd_path;
 #ifdef JULEA_DEBUG
 	g_autofree gchar* object_path_port = NULL;
 	g_autofree gchar* kv_path_port = NULL;
+	g_autofree gchar* smd_path_port = NULL;
 #endif
 
 	GOptionEntry entries[] = {
@@ -772,12 +819,18 @@ main (int argc, char** argv)
 	kv_component = j_configuration_get_kv_component(jd_configuration);
 	kv_path = j_configuration_get_kv_path(jd_configuration);
 
+	smd_backend = j_configuration_get_smd_backend(configuration);
+	smd_component = j_configuration_get_smd_component(configuration);
+	smd_path = j_configuration_get_smd_path(configuration);
+
 #ifdef JULEA_DEBUG
 	object_path_port = g_strdup_printf("%s/%d", object_path, opt_port);
 	kv_path_port = g_strdup_printf("%s/%d", kv_path, opt_port);
+	smd_path_port = g_strdup_printf("%s/%d", smd_path, opt_port);
 
 	object_path = object_path_port;
 	kv_path = kv_path_port;
+	smd_path = kv_path_port;
 #endif
 
 	if (j_backend_load_server(object_backend, object_component, J_BACKEND_TYPE_OBJECT, &object_module, &jd_object_backend))
@@ -794,6 +847,15 @@ main (int argc, char** argv)
 		if (jd_kv_backend == NULL || !j_backend_kv_init(jd_kv_backend, kv_path))
 		{
 			J_CRITICAL("Could not initialize kv backend %s.\n", kv_backend);
+			return 1;
+		}
+	}
+
+	if (j_backend_load_server(smd_backend, smd_component, J_BACKEND_TYPE_SMD, &smd_module, &jd_smd_backend))
+	{
+		if (jd_smd_backend == NULL || !j_backend_kv_init(jd_smd_backend, smd_path))
+		{
+			J_CRITICAL("Could not initialize kv backend %s.\n", smd_backend);
 			return 1;
 		}
 	}
@@ -817,12 +879,22 @@ main (int argc, char** argv)
 
 	if (jd_kv_backend != NULL)
 	{
+		j_backend_smd_fini(jd_smd_backend);
+	}
+
+	if (jd_kv_backend != NULL)
+	{
 		j_backend_kv_fini(jd_kv_backend);
 	}
 
 	if (jd_object_backend != NULL)
 	{
 		j_backend_object_fini(jd_object_backend);
+	}
+
+	if (smd_module != NULL)
+	{
+		g_module_close(smd_module);
 	}
 
 	if (kv_module != NULL)

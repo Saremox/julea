@@ -20,43 +20,11 @@
  * \file
  **/
 
-#ifndef JULEA_SMD_SMD_H
-#define JULEA_SMD_SMD_H
-
-#if !defined(JULEA_SMD_H) && !defined(JULEA_SMD_COMPILATION)
-#error "Only <julea-smd.h> can be included directly."
-#endif
-
-#include <glib.h>
-
-#include <julea.h>
-
-G_BEGIN_DECLS
-
-#define JSMD_REGISTER_TYPE(enum,string) enum,
-typedef enum JSMD_TYPES{
-#include <smd/jsmd-types.h>
-} JSMD_TYPES;
-
-#undef JSMD_REGISTER_TYPE
-
-#define JSMD_REGISTER_TYPE(enum,string) string,
-const gchar *JSMD_TYPES_STRING[] = {
-  #include <smd/jsmd-types.h>
-  NULL
-};
-
-#undef JSMD_REGISTER_TYPE
-
-struct JSMD;
-
-typedef struct JSMD JSMD;
-
-int64_t j_smd_type_string2int(const gchar*);
-gchar*  j_smd_type_int2string(int64_t);
-
-
-
-G_END_DECLS
-
-#endif
+JSMD_REGISTER_TYPE(JSMD_TYPE_INVALID_BSON , "ERROR: type of bson value must be of STRING or INTEGER")
+JSMD_REGISTER_TYPE(JSMD_TYPE_UNKNOWN, "ERROR: unknown type in bson value")
+JSMD_REGISTER_TYPE(JSMD_TYPE_INTEGER_KEY , "integer_key")
+JSMD_REGISTER_TYPE(JSMD_TYPE_TEXT_KEY , "text_key")
+JSMD_REGISTER_TYPE(JSMD_TYPE_DATE_KEY , "date_key")
+JSMD_REGISTER_TYPE(JSMD_TYPE_INTEGER , "integer")
+JSMD_REGISTER_TYPE(JSMD_TYPE_TEXT , "text")
+JSMD_REGISTER_TYPE(JSMD_TYPE_DATE , "date")
