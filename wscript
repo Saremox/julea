@@ -404,7 +404,7 @@ def build(ctx):
 		install_path='${LIBDIR}'
 	)
 
-	clients = ['object', 'kv', 'item']
+	clients = ['object', 'kv', 'item', 'smd']
 
 	if ctx.env.JULEA_HDF:
 		clients.append('hdf5')
@@ -548,7 +548,7 @@ def build(ctx):
 		ctx.shlib(
 			source = ['backend/smd/{0}.c'.format(backend)],
 			target = 'backend/smd/{0}'.format(backend),
-			use = use_julea_backend + ['lib/julea'] + use_extra,
+			use = use_julea_backend + ['lib/julea-smd'] + ['lib/julea'] + use_extra,
 			includes = ['include'],
 			cflags = cflags,
 			rpath = get_rpath(ctx),
