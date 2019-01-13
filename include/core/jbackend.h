@@ -106,11 +106,13 @@ struct JBackend
 			gboolean (*backend_apply_scheme) (gchar const*, bson_t const*);
 			gboolean (*backend_get_scheme) (gchar const*, bson_t*);
 
-			gboolean (*backend_insert) (gchar const*, bson_t const*);
-			gboolean (*backend_update) (gchar const*, bson_t const*);
-			gboolean (*backend_delete) (gchar const*, bson_t const*);
+			gboolean (*backend_insert) (gchar const*,gchar const*, bson_t const*);
+			gboolean (*backend_update) (gchar const*,gchar const*, bson_t const*);
+			gboolean (*backend_delete) (gchar const*,gchar const*, bson_t const*);
+			gboolean (*backend_get) (gchar const*,gchar const*, bson_t const*);
 
 			gboolean (*backend_search) (bson_t*, gpointer*);
+			gboolean (*backend_search_namespace) (bson_t*, gpointer*,gchar const*);
 			gboolean (*backend_iterate) (gpointer, bson_t*);
 
 			gboolean (*backend_error) (bson_t*);
@@ -163,11 +165,13 @@ void 		 j_backend_smd_fini (JBackend*);
 gboolean j_backend_smd_apply_scheme (JBackend*,gchar const*,bson_t const*);
 gboolean j_backend_smd_get_scheme (JBackend*,gchar const*,bson_t*);
 
-gboolean j_backend_smd_insert (JBackend*,gchar const*,bson_t const*);
-gboolean j_backend_smd_update (JBackend*,gchar const*,bson_t const*);
-gboolean j_backend_smd_delete (JBackend*,gchar const*,bson_t const*);
+gboolean j_backend_smd_insert (JBackend*,gchar const*,gchar const*,bson_t const*);
+gboolean j_backend_smd_update (JBackend*,gchar const*,gchar const*,bson_t const*);
+gboolean j_backend_smd_delete (JBackend*,gchar const*,gchar const*,bson_t const*);
+gboolean j_backend_smd_get (JBackend*,gchar const*,gchar const*,bson_t const*);
 
-gboolean j_backend_smd_search (JBackend*,bson_t*, gpointer*);
+gboolean j_backend_smd_search (JBackend*,bson_t*, gpointer*,gchar const*);
+gboolean j_backend_smd_search_namespace (JBackend*,bson_t*, gpointer*,gchar const*);
 gboolean j_backend_smd_iterate (JBackend*,gpointer, bson_t*);
 
 gboolean j_backend_smd_error (bson_t*);

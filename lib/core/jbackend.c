@@ -562,6 +562,17 @@ j_backend_smd_init (JBackend* backend, gchar const* path)
 	return ret;
 }
 
+void
+j_backend_smd_fini(JBackend* backend)
+{
+	g_return_if_fail(backend != NULL);
+	g_return_if_fail(backend->type == J_BACKEND_TYPE_SMD);
+
+	j_trace_enter("smd_fini", "");
+	backend->smd.backend_fini();
+	j_trace_leave("smd_fini");
+}
+
 /**
  * @}
  **/
