@@ -334,5 +334,26 @@ j_kv_backend (void)
 }
 
 /**
+ * Returns the data backend.
+ *
+ * \private
+ *
+ * \author Michael Straßberger
+ *
+ * \return The data backend.
+ */
+JBackend*
+j_smd_backend (void)
+{
+	JCommon* common;
+
+	g_return_val_if_fail(j_is_initialized(), NULL);
+
+	common = g_atomic_pointer_get(&j_common);
+
+	return common->smd_backend;
+}
+
+/**
  * @}
  **/
