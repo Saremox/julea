@@ -573,6 +573,146 @@ j_backend_smd_fini(JBackend* backend)
 	j_trace_leave("smd_fini");
 }
 
+gboolean
+j_backend_smd_apply_scheme(JBackend* backend, const gchar* namespace, const bson_t* scheme)
+{
+	gboolean ret;
+
+	g_return_val_if_fail(backend != NULL, FALSE);
+	g_return_val_if_fail(backend->type == J_BACKEND_TYPE_SMD, FALSE);
+	g_return_val_if_fail(namespace != NULL, FALSE);
+	g_return_val_if_fail(scheme != NULL, FALSE);
+
+	j_trace_enter("smd_apply_scheme","%s", namespace);
+	ret = backend->smd.backend_apply_scheme(namespace,scheme);
+	j_trace_leave("smd_apply_scheme");
+
+	return ret;
+}
+
+gboolean
+j_backend_smd_get_scheme(JBackend* backend, const gchar* namespace, bson_t* scheme)
+{
+	gboolean ret;
+
+	g_return_val_if_fail(backend != NULL, FALSE);
+	g_return_val_if_fail(backend->type == J_BACKEND_TYPE_SMD, FALSE);
+	g_return_val_if_fail(namespace != NULL, FALSE);
+	g_return_val_if_fail(scheme != NULL, FALSE);
+
+	j_trace_enter("smd_get_scheme","%s", namespace);
+	ret = backend->smd.backend_get_scheme(namespace,scheme);
+	j_trace_leave("smd_get_scheme");
+
+	return ret;
+}
+
+gboolean 
+j_backend_smd_insert (JBackend* backend, gchar const* namespace,gchar const* key, bson_t const* node)
+{
+	gboolean ret;
+
+	g_return_val_if_fail(backend != NULL, FALSE);
+	g_return_val_if_fail(backend->type == J_BACKEND_TYPE_SMD, FALSE);
+	g_return_val_if_fail(namespace != NULL, FALSE);
+	g_return_val_if_fail(key != NULL, FALSE);
+	g_return_val_if_fail(node != NULL, FALSE);
+
+	j_trace_enter("smd_insert","%s", namespace);
+	ret = backend->smd.backend_insert(namespace,key,node);
+	j_trace_leave("smd_insert");
+
+	return ret;
+}
+
+gboolean 
+j_backend_smd_update (JBackend* backend, gchar const* namespace,gchar const* key, bson_t const* node)
+{
+	gboolean ret;
+
+	g_return_val_if_fail(backend != NULL, FALSE);
+	g_return_val_if_fail(backend->type == J_BACKEND_TYPE_SMD, FALSE);
+	g_return_val_if_fail(namespace != NULL, FALSE);
+	g_return_val_if_fail(key != NULL, FALSE);
+	g_return_val_if_fail(node != NULL, FALSE);
+
+	j_trace_enter("smd_update","%s", namespace);
+	ret = backend->smd.backend_insert(namespace,key,node);
+	j_trace_leave("smd_update");
+
+	return ret;
+}
+
+gboolean 
+j_backend_smd_delete (JBackend* backend, gchar const* namespace,gchar const* key, bson_t const* node)
+{
+	gboolean ret;
+
+	g_return_val_if_fail(backend != NULL, FALSE);
+	g_return_val_if_fail(backend->type == J_BACKEND_TYPE_SMD, FALSE);
+	g_return_val_if_fail(namespace != NULL, FALSE);
+	g_return_val_if_fail(key != NULL, FALSE);
+	g_return_val_if_fail(node != NULL, FALSE);
+
+	j_trace_enter("smd_delete","%s", namespace);
+	ret = backend->smd.backend_insert(namespace,key,node);
+	j_trace_leave("smd_delete");
+
+	return ret;
+}
+
+gboolean 
+j_backend_smd_get (JBackend* backend, gchar const* namespace,gchar const* key, bson_t const* node)
+{
+	gboolean ret;
+
+	g_return_val_if_fail(backend != NULL, FALSE);
+	g_return_val_if_fail(backend->type == J_BACKEND_TYPE_SMD, FALSE);
+	g_return_val_if_fail(namespace != NULL, FALSE);
+	g_return_val_if_fail(key != NULL, FALSE);
+	g_return_val_if_fail(node != NULL, FALSE);
+
+	j_trace_enter("smd_get","%s", namespace);
+	ret = backend->smd.backend_insert(namespace,key,node);
+	j_trace_leave("smd_get");
+
+	return ret;
+}
+
+
+gboolean 
+j_backend_smd_search (JBackend* backend, bson_t* search_args, gpointer* data)
+{
+	gboolean ret;
+
+	g_return_val_if_fail(backend != NULL, FALSE);
+	g_return_val_if_fail(backend->type == J_BACKEND_TYPE_SMD, FALSE);
+	g_return_val_if_fail(search_args != NULL, FALSE);
+
+	j_trace_enter("smd_search",NULL);
+	ret = backend->smd.backend_search(search_args,data);
+	j_trace_leave("smd_search");
+
+	return ret;
+}
+
+gboolean 
+j_backend_smd_search_namespace (JBackend* backend, bson_t* search_args, gpointer* data, gchar const* namespace)
+{
+	gboolean ret;
+
+	g_return_val_if_fail(backend != NULL, FALSE);
+	g_return_val_if_fail(backend->type == J_BACKEND_TYPE_SMD, FALSE);
+	g_return_val_if_fail(search_args != NULL, FALSE);
+	g_return_val_if_fail(namespace != NULL, FALSE);
+
+	j_trace_enter("smd_search_namespace","%s", namespace);
+	ret = backend->smd.backend_search_namespace(search_args,data,namespace);
+	j_trace_leave("smd_search_namespace");
+
+	return ret;	
+}
+
 /**
  * @}
  **/

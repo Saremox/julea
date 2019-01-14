@@ -170,7 +170,7 @@ gboolean j_backend_smd_update (JBackend*,gchar const*,gchar const*,bson_t const*
 gboolean j_backend_smd_delete (JBackend*,gchar const*,gchar const*,bson_t const*);
 gboolean j_backend_smd_get (JBackend*,gchar const*,gchar const*,bson_t const*);
 
-gboolean j_backend_smd_search (JBackend*,bson_t*, gpointer*,gchar const*);
+gboolean j_backend_smd_search (JBackend*,bson_t*, gpointer*);
 gboolean j_backend_smd_search_namespace (JBackend*,bson_t*, gpointer*,gchar const*);
 gboolean j_backend_smd_iterate (JBackend*,gpointer, bson_t*);
 
