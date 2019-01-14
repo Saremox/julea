@@ -151,10 +151,24 @@ j_connection_pool_fini (void)
 		g_async_queue_unref(pool->kv_queues[i].queue);
 	}
 
+	for (guint i = 0; i < pool->smd_len; i++)
+	{
+		GSocketConnection* connection;
+
+		while ((connection = g_async_queue_try_pop(pool->smd_queues[i].queue)) != NULL)
+		{
+			g_io_stream_close(G_IO_STREAM(connection), NULL, NULL);
+			g_object_unref(connection);
+		}
+
+		g_async_queue_unref(pool->kv_queues[i].queue);
+	}
+
 	j_configuration_unref(pool->configuration);
 
 	g_free(pool->object_queues);
 	g_free(pool->kv_queues);
+	g_free(pool->smd_queues);
 
 	g_slice_free(JConnectionPool, pool);
 
