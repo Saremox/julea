@@ -643,6 +643,27 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 					namespace = j_message_get_string(message);
 				}
 				break;
+			case J_MESSAGE_SMD_DELETE:
+				{
+					g_autoptr(JMessage) reply = NULL;
+					reply = j_message_new_reply(message);
+					namespace = j_message_get_string(message);
+				}
+				break;
+			case J_MESSAGE_SMD_SEARCH:
+				{
+					g_autoptr(JMessage) reply = NULL;
+					reply = j_message_new_reply(message);
+					namespace = j_message_get_string(message);
+				}
+				break;
+			case J_MESSAGE_SMD_SEARCH_NAMESPACE:
+				{
+					g_autoptr(JMessage) reply = NULL;
+					reply = j_message_new_reply(message);
+					namespace = j_message_get_string(message);
+				}
+				break;
 			default:
 				g_warn_if_reached();
 				break;
