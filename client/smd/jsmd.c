@@ -1,6 +1,6 @@
 /*
  * JULEA - Flexible storage framework
- * Copyright (C) 2017-2018 Michael Kuhn
+ * Copyright (C) 2017-2018 Michael Straßberger
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -64,6 +64,59 @@ j_smd_type_int2string(int64_t type_value)
   else
     return g_strdup(JSMD_TYPES_STRING[type_value]);
 }
+
+void 
+j_smd_apply_scheme(const gchar* namespace, const bson_t* scheme, JBatch* batch)
+{
+  g_return_if_fail(namespace != NULL);
+  g_return_if_fail(scheme != NULL);
+  g_return_if_fail(batch != NULL);
+}
+
+void 
+j_smd_get_scheme(const gchar* namespace, const bson_t* scheme, JBatch* batch)
+{
+  g_return_if_fail(namespace != NULL);
+  g_return_if_fail(scheme != NULL);
+  g_return_if_fail(batch != NULL);
+}
+
+void 
+j_smd_insert(const gchar* namespace, const gchar* key, const bson_t* node, JBatch* batch)
+{
+  g_return_if_fail(namespace != NULL);
+  g_return_if_fail(key != NULL);
+  g_return_if_fail(node != NULL);
+  g_return_if_fail(batch != NULL);
+}
+
+void 
+j_smd_get(const gchar* namespace, const gchar* key, const bson_t* node, JBatch* batch)
+{
+  g_return_if_fail(namespace != NULL);
+  g_return_if_fail(key != NULL);
+  g_return_if_fail(node != NULL);
+  g_return_if_fail(batch != NULL);
+}
+
+void 
+j_smd_update(const gchar* namespace, const gchar* key, const bson_t* node, JBatch* batch)
+{ 
+  g_return_if_fail(namespace != NULL);
+  g_return_if_fail(key != NULL);
+  g_return_if_fail(node != NULL);
+  g_return_if_fail(batch != NULL);
+}
+
+void 
+j_smd_delete(const gchar* namespace, const gchar* key, const bson_t* node, JBatch* batch)
+{
+  g_return_if_fail(namespace != NULL);
+  g_return_if_fail(key != NULL);
+  g_return_if_fail(node != NULL);
+  g_return_if_fail(batch != NULL);
+}
+
 
 /**
  * @}

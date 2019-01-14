@@ -55,7 +55,13 @@ typedef struct JSMD JSMD;
 int64_t j_smd_type_string2int(const gchar*);
 gchar*  j_smd_type_int2string(int64_t);
 
+void j_smd_apply_scheme(const gchar*, const bson_t*, JBatch*);
+void j_smd_get_scheme(const gchar*, const bson_t*, JBatch*);
 
+void j_smd_insert(const gchar*, const gchar*, const bson_t*, JBatch*);
+void j_smd_get(const gchar*, const gchar*, const bson_t*, JBatch*);
+void j_smd_update(const gchar*, const gchar*, const bson_t*, JBatch*);
+void j_smd_delete(const gchar*, const gchar*, const bson_t*, JBatch*);
 
 G_END_DECLS
 
