@@ -610,16 +610,43 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 				break;
 			case J_MESSAGE_SMD_SCHEMA_APPLY:
 				{
+					uint8_t* bson_payload;
+					bson_t bson_data;
+					gsize bson_payload_length;
 					g_autoptr(JMessage) reply = NULL;
-					reply = j_message_new_reply(message);
+
+					if (type_modifier & J_MESSAGE_FLAGS_SAFETY_NETWORK)
+					{
+						reply = j_message_new_reply(message);
+					}
+
 					namespace = j_message_get_string(message);
+					bson_payload_length = j_message_get_4(message);
+					bson_payload = j_message_get_n(message,bson_payload_length);
+
+					bson_init_static(&bson_data,bson_payload,bson_payload_length);
+
+					j_backend_smd_apply_scheme(jd_smd_backend,namespace,&bson_data);
+
+					if (reply != NULL)
+					{
+						j_message_send(reply, connection);
+					}
 				}
 				break;
 			case J_MESSAGE_SMD_SCHEMA_GET:
 				{
+					bson_t bson_data;
 					g_autoptr(JMessage) reply = NULL;
 					reply = j_message_new_reply(message);
 					namespace = j_message_get_string(message);
+
+					j_backend_smd_get_scheme(jd_smd_backend,namespace,&bson_data);
+					j_message_add_operation(reply, 4 + bson_data.len);
+					j_message_append_4(reply,&bson_data.len);
+					j_message_append_n(reply,bson_get_data(&bson_data),bson_data.len);
+
+					j_message_send(reply,connection);
 				}
 				break;
 			case J_MESSAGE_SMD_INSERT:
