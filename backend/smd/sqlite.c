@@ -76,17 +76,17 @@ generate_create_table_stmt(gchar const* namespace, bson_t const* scheme)
 		{
 			case JSMD_TYPE_INTEGER:
 				g_string_append_printf(create_querry,
-										"\n %s INTEGER",
+										"\n %s INTEGER NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_TEXT:
 				g_string_append_printf(create_querry,
-										"\n %s TEXT",
+										"\n %s TEXT NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_DATE:
 				g_string_append_printf(create_querry,
-										"\n %s DATE",
+										"\n %s DATE NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_UNKNOWN:
@@ -149,6 +149,16 @@ generate_insert_table_stmt(gchar const* namespace, bson_t const* node)
 	return g_string_free(insert_querry,false);
 	error:
 		return NULL;
+}
+
+static 
+gchar*
+create_get_stmt(gchar const* namespace, gchar const* key)
+{
+	GString* get_querry = g_string_new(NULL);
+
+	g_string_append_printf(get_querry,"SELECT * FROM `%s` WHERE `key` = '%s'", namespace, key);
+	return g_string_free(get_querry,FALSE);
 }
 
 /* 
@@ -414,7 +424,54 @@ backend_get (gchar const* namespace, gchar const* key, bson_t const* node)
 	g_return_val_if_fail(key != NULL, FALSE);
 	g_return_val_if_fail(node != NULL, FALSE);
 
+	bson_t *result = g_malloc_n(1, sizeof(bson_t));
+	sqlite3_stmt* get_stmt;
+	g_autofree gchar* querry = create_get_stmt(namespace, key);
+
+	if(! sqlite3_prepare_v2(backend_db,querry,-1,&get_stmt,NULL) == SQLITE_OK)
+	{
+		goto error;
+	}
+
+	if( sqlite3_step(get_stmt) == SQLITE_ROW)
+	{
+		bson_init(result);
+
+		for(int i = 0; i < sqlite3_column_count(get_stmt); i++)
+		{
+			gchar const* value;
+			gchar const* c_name = sqlite3_column_name(get_stmt,i);
+			if(g_strcmp0(c_name,"key"))
+			{
+				continue;
+			}
+
+			switch (sqlite3_column_type(get_stmt,i))
+			{
+				case SQLITE_INTEGER:
+					bson_append_int64(result,c_name,strlen(c_name),sqlite3_column_int64(get_stmt,i));
+					break;
+				case SQLITE3_TEXT:
+					value = sqlite3_column_blob(get_stmt,i);
+					bson_append_utf8(result,c_name,strlen(c_name),value,strlen(value));
+					break;			
+				default:
+				  // This should not happen
+					g_error("Found not supported column type in sqlite result");
+					break;
+			}
+		}
+	}
+	else
+	{
+		// ERROR or NOT_FOUND
+		return FALSE;
+	}
+	
+
 	return TRUE;
+	error:
+		return FALSE;
 }
 
 static
