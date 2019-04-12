@@ -163,13 +163,10 @@ main (gint argc, gchar** argv)
 		{ "kv-backend", 0, 0, G_OPTION_ARG_STRING, &opt_kv_backend, "Key-value backend to use", "posix|null|gio|…" },
 		{ "kv-component", 0, 0, G_OPTION_ARG_STRING, &opt_kv_component, "Key-value component to use", "client|server" },
 		{ "kv-path", 0, 0, G_OPTION_ARG_STRING, &opt_kv_path, "Key-value path to use", "/path/to/storage" },
-<<<<<<< HEAD
 		{ "max-operation-size", 0, 0, G_OPTION_ARG_INT64, &opt_max_operation_size, "Maximum size of an operation", "0" },
-=======
 		{ "smd-backend", 0, 0, G_OPTION_ARG_STRING, &opt_smd_backend, "Structured-metadata backend to use", "posix|null|gio|…" },
 		{ "smd-component", 0, 0, G_OPTION_ARG_STRING, &opt_smd_component, "Structured-metadata component to use", "client|server" },
 		{ "smd-path", 0, 0, G_OPTION_ARG_STRING, &opt_smd_path, "Structured-metadata path to use", "/path/to/storage" },
->>>>>>> Add SMD support to config and backend loader
 		{ "max-connections", 0, 0, G_OPTION_ARG_INT, &opt_max_connections, "Maximum number of connections", "0" },
 		{ "stripe-size", 0, 0, G_OPTION_ARG_INT64, &opt_stripe_size, "Default stripe size", "0" },
 		{ NULL, 0, 0, 0, NULL, NULL, NULL }
@@ -192,13 +189,9 @@ main (gint argc, gchar** argv)
 	if ((opt_user && opt_system)
 	    || (opt_read && (opt_servers_object != NULL || opt_servers_smd != NULL || opt_servers_kv != NULL || opt_object_backend != NULL || opt_object_component != NULL ||opt_object_path != NULL || opt_kv_backend != NULL || opt_kv_component != NULL || opt_kv_path != NULL || opt_smd_backend != NULL || opt_smd_component != NULL || opt_smd_path != NULL))
 	    || (opt_read && !opt_user && !opt_system)
-<<<<<<< HEAD
-	    || (!opt_read && (opt_servers_object == NULL || opt_servers_kv == NULL || opt_object_backend == NULL || opt_object_component == NULL || opt_object_path == NULL || opt_kv_backend == NULL || opt_kv_component == NULL || opt_kv_path == NULL))
-	    || opt_max_operation_size < 0
-=======
 	    || (!opt_read && (opt_servers_object == NULL || opt_servers_kv == NULL || opt_servers_smd == NULL ||opt_object_backend == NULL || opt_object_component == NULL ||opt_object_path == NULL || opt_kv_backend == NULL || opt_kv_component == NULL || opt_kv_path == NULL || opt_smd_backend == NULL || opt_smd_component == NULL || opt_smd_path == NULL))
->>>>>>> Add SMD support to config and backend loader
 	    || opt_max_connections < 0
+			|| opt_max_operation_size < 0
 	    || opt_stripe_size < 0
 	)
 	{

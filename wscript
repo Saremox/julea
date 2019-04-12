@@ -548,8 +548,8 @@ def build(ctx):
 		ctx.shlib(
 			source = ['backend/smd/{0}.c'.format(backend)],
 			target = 'backend/smd/{0}'.format(backend),
-			use = use_julea_backend + ['lib/julea-smd'] + ['lib/julea'] + use_extra,
-			includes = ['include'],
+			use = use_julea_backend + ['lib/julea'] + use_extra,
+			includes = include_julea_core,
 			cflags = cflags,
 			rpath = get_rpath(ctx),
 			install_path = '${LIBDIR}/julea/backend/smd'
@@ -593,7 +593,7 @@ def build(ctx):
 		)
 
 	# pkg-config
-	for lib in ('', 'object', 'kv', 'item'):
+	for lib in ('', 'object', 'kv', 'item' , 'smd'):
 		suffix = '-{0}'.format(lib) if lib else ''
 
 		ctx(

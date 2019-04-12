@@ -119,9 +119,7 @@ struct JConfiguration
 	}
 	kv;
 
-<<<<<<< HEAD:lib/core/jconfiguration.c
 	guint64 max_operation_size;
-=======
 	/**
 	 * The smd configuration.
 	 */
@@ -144,7 +142,6 @@ struct JConfiguration
 	}
 	smd;
 
->>>>>>> Add SMD support to config and backend loader:lib/jconfiguration.c
 	guint32 max_connections;
 	guint64 stripe_size;
 
@@ -262,13 +259,10 @@ j_configuration_new_for_data (GKeyFile* key_file)
 	gchar* kv_backend;
 	gchar* kv_component;
 	gchar* kv_path;
-<<<<<<< HEAD:lib/core/jconfiguration.c
 	guint64 max_operation_size;
-=======
 	gchar* smd_backend;
 	gchar* smd_component;
 	gchar* smd_path;
->>>>>>> Add SMD support to config and backend loader:lib/jconfiguration.c
 	guint32 max_connections;
 	guint64 stripe_size;
 
@@ -333,13 +327,10 @@ j_configuration_new_for_data (GKeyFile* key_file)
 	configuration->kv.backend = kv_backend;
 	configuration->kv.component = kv_component;
 	configuration->kv.path = kv_path;
-<<<<<<< HEAD:lib/core/jconfiguration.c
 	configuration->max_operation_size = max_operation_size;
-=======
 	configuration->smd.backend = smd_backend;
 	configuration->smd.component = smd_component;
 	configuration->smd.path = smd_path;
->>>>>>> Add SMD support to config and backend loader:lib/jconfiguration.c
 	configuration->max_connections = max_connections;
 	configuration->stripe_size = stripe_size;
 	configuration->ref_count = 1;
