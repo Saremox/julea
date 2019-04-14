@@ -925,7 +925,7 @@ main (int argc, char** argv)
 
 	j_statistics_free(jd_statistics);
 
-	if (jd_kv_backend != NULL)
+	if (jd_smd_backend != NULL)
 	{
 		j_backend_smd_fini(jd_smd_backend);
 	}

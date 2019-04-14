@@ -188,7 +188,7 @@ j_init (void)
 		}
 	}
 
-	if (j_backend_load_client(smd_backend, smd_component, J_BACKEND_TYPE_KV, &(common->smd_module), &(common->smd_backend)))
+	if (j_backend_load_client(smd_backend, smd_component, J_BACKEND_TYPE_SMD, &(common->smd_module), &(common->smd_backend)))
 	{
 		if (common->smd_backend == NULL || !j_backend_smd_init(common->smd_backend, smd_path))
 		{
