@@ -74,7 +74,32 @@ generate_create_table_stmt(gchar const* namespace, bson_t const* scheme)
 
 		switch(jsmd_type)
 		{
+			
+			case JSMD_TYPE_INTEGER_8:
+				g_string_append_printf(create_querry,
+										"\n %s TINYINT NOT NULL",
+										bson_iter_key(&iter));
+				break;
+			case JSMD_TYPE_INTEGER_16:
+				g_string_append_printf(create_querry,
+										"\n %s SMALLINT NOT NULL",
+										bson_iter_key(&iter));
+				break;
+			
+			case JSMD_TYPE_INTEGER_32:
+				g_string_append_printf(create_querry,
+											"\n %s INT NOT NULL",
+										bson_iter_key(&iter));
+				break;
 			case JSMD_TYPE_INTEGER:
+			case JSMD_TYPE_INTEGER_64:
+				g_string_append_printf(create_querry,
+										"\n %s BIGINT NOT NULL",
+										bson_iter_key(&iter));
+				break;
+			case JSMD_TYPE_UNSIGNED_INTEGER_8:
+			case JSMD_TYPE_UNSIGNED_INTEGER_16:
+			case JSMD_TYPE_UNSIGNED_INTEGER_32:
 				g_string_append_printf(create_querry,
 										"\n %s INTEGER NOT NULL",
 										bson_iter_key(&iter));
@@ -84,9 +109,32 @@ generate_create_table_stmt(gchar const* namespace, bson_t const* scheme)
 										"\n %s TEXT NOT NULL",
 										bson_iter_key(&iter));
 				break;
+			case JSMD_TYPE_FLOAT:
+			case JSMD_TYPE_FLOAT_16:
+			case JSMD_TYPE_FLOAT_32:
+			case JSMD_TYPE_FLOAT_64:
+				g_string_append_printf(create_querry,
+										"\n %s REAL NOT NULL",
+										bson_iter_key(&iter));
+				break;
 			case JSMD_TYPE_DATE:
 				g_string_append_printf(create_querry,
 										"\n %s DATE NOT NULL",
+										bson_iter_key(&iter));
+				break;
+			case JSMD_TYPE_DATE_TIME:
+				g_string_append_printf(create_querry,
+										"\n %s DATETIME NOT NULL",
+										bson_iter_key(&iter));
+				break;
+			case JSMD_TYPE_INTEGER_128:
+			case JSMD_TYPE_UNSIGNED_INTEGER:
+			case JSMD_TYPE_UNSIGNED_INTEGER_64:
+			case JSMD_TYPE_UNSIGNED_INTEGER_128:
+			case JSMD_TYPE_FLOAT_128:
+			case JSMD_TYPE_FLOAT_256:
+				g_string_append_printf(create_querry,
+										"\n %s BLOB NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_UNKNOWN:
@@ -340,11 +388,18 @@ backend_insert (gchar const* namespace, gchar const* key, bson_t const* node)
 			goto error;
 		}
 		
+		size_t bytes = 0; // Size of binary data;
 		jsmd_type = smd_get_type(&iter_scheme);
 		switch(jsmd_type)
 		{
 			case JSMD_TYPE_INTEGER:
-			case JSMD_TYPE_INTEGER_KEY:
+			case JSMD_TYPE_INTEGER_8:
+			case JSMD_TYPE_INTEGER_16:
+			case JSMD_TYPE_INTEGER_32:
+			case JSMD_TYPE_INTEGER_64:
+			case JSMD_TYPE_UNSIGNED_INTEGER_8:
+			case JSMD_TYPE_UNSIGNED_INTEGER_16:
+			case JSMD_TYPE_UNSIGNED_INTEGER_32:
 				if( bson_iter_type(&iter_node) != BSON_TYPE_INT64)
 				{
 					// Wrong type in node
@@ -353,7 +408,6 @@ backend_insert (gchar const* namespace, gchar const* key, bson_t const* node)
 				sqlite3_bind_int64(insert_stmt, insert_index, bson_iter_int64(&iter_node));
 				break;
 			case JSMD_TYPE_TEXT:
-			case JSMD_TYPE_TEXT_KEY:
 				if( bson_iter_type(&iter_node) != BSON_TYPE_UTF8)
 				{
 					// Wrong type in node
@@ -361,9 +415,37 @@ backend_insert (gchar const* namespace, gchar const* key, bson_t const* node)
 				}
 				sqlite3_bind_text(insert_stmt, insert_index, bson_iter_utf8(&iter_node,NULL),-1,NULL);
 				break;
+			case JSMD_TYPE_FLOAT:
+			case JSMD_TYPE_FLOAT_16:
+			case JSMD_TYPE_FLOAT_32:
+			case JSMD_TYPE_FLOAT_64:
+				if( bson_iter_type(&iter_node) != BSON_TYPE_DOUBLE)
+				{
+					// Wrong type in node
+					goto error;
+				}
+				sqlite3_bind_double(insert_stmt, insert_index, bson_iter_double(&iter_node));
+				break;
+			case JSMD_TYPE_FLOAT_256:
+				bytes += 16; // Size difference from 256bits to 128bits 
+			case JSMD_TYPE_FLOAT_128:
+			case JSMD_TYPE_INTEGER_128:
+			case JSMD_TYPE_UNSIGNED_INTEGER_128:
+				bytes += 8; // Size difference from 128bits to 64bits 
+			case JSMD_TYPE_UNSIGNED_INTEGER:
+			case JSMD_TYPE_UNSIGNED_INTEGER_64:
+				bytes += 8; // Size of 64 Bit unsigned integer
+				if( bson_iter_type(&iter_node) != BSON_TYPE_BINARY)
+				{
+					// Wrong type in node
+					goto error;
+				}
+				uint8_t* blob;
+				bson_iter_binary(&iter_node, NULL, &bytes, &blob);
+				sqlite3_bind_blob(insert_stmt, insert_index, &blob , bytes , NULL);
+				break;
 			case JSMD_TYPE_DATE:
-			case JSMD_TYPE_DATE_KEY:
-				if( bson_iter_type(&iter_node) != BSON_TYPE_INT64)
+				if( bson_iter_type(&iter_node) != BSON_TYPE_TIMESTAMP)
 				{
 					// Wrong type in node
 					goto error;
@@ -419,45 +501,131 @@ backend_delete (gchar const* namespace, gchar const* key, bson_t const* node)
 static
 gboolean 
 backend_get (gchar const* namespace, gchar const* key, bson_t const* node)
-{
+{	
+	sqlite3_stmt* get_stmt;
+	bson_t namespace_scheme = BSON_INITIALIZER;
+	bson_iter_t namespace_scheme_iter;
+	g_autofree gchar* querry;
+
 	g_return_val_if_fail(namespace != NULL, FALSE);
 	g_return_val_if_fail(key != NULL, FALSE);
 	g_return_val_if_fail(node != NULL, FALSE);
 
-	bson_t *result = g_malloc_n(1, sizeof(bson_t));
-	sqlite3_stmt* get_stmt;
-	g_autofree gchar* querry = create_get_stmt(namespace, key);
+	if(!backend_get_scheme(namespace, &namespace_scheme))
+	{
+		// Namespace not present.
+		goto error;
+	}
+
+	if(node == NULL)
+	{
+		bson_init(node);
+	}
+	
+	querry = create_get_stmt(namespace, key);
 
 	if(! sqlite3_prepare_v2(backend_db,querry,-1,&get_stmt,NULL) == SQLITE_OK)
 	{
 		goto error;
 	}
 
-	if( sqlite3_step(get_stmt) == SQLITE_ROW)
+	if( sqlite3_step(get_stmt) == SQLITE_ROW &&
+		  bson_iter_init(&namespace_scheme_iter,&namespace_scheme))
 	{
-		bson_init(result);
-
 		for(int i = 0; i < sqlite3_column_count(get_stmt); i++)
 		{
+			size_t bytes = 0;
+			size_t length = 0;
 			gchar const* value;
 			gchar const* c_name = sqlite3_column_name(get_stmt,i);
 			if(g_strcmp0(c_name,"key"))
 			{
 				continue;
 			}
+			bson_iter_find(&namespace_scheme_iter,c_name);
 
 			switch (sqlite3_column_type(get_stmt,i))
 			{
 				case SQLITE_INTEGER:
-					bson_append_int64(result,c_name,strlen(c_name),sqlite3_column_int64(get_stmt,i));
+					switch (smd_get_type(&namespace_scheme_iter))
+					{
+						case JSMD_TYPE_INTEGER:
+						case JSMD_TYPE_INTEGER_64:
+							bson_append_int64(node,c_name,strlen(c_name),sqlite3_column_int64(get_stmt,i));
+							break;
+						case JSMD_TYPE_INTEGER_32:
+						case JSMD_TYPE_UNSIGNED_INTEGER_32:
+						case JSMD_TYPE_INTEGER_16:
+						case JSMD_TYPE_UNSIGNED_INTEGER_16:
+						case JSMD_TYPE_INTEGER_8:
+						case JSMD_TYPE_UNSIGNED_INTEGER_8:
+							bson_append_int32(node,c_name,strlen(c_name),(int32_t) sqlite3_column_int64(get_stmt,i));
+							break;
+						case JSMD_TYPE_DATE:
+						case JSMD_TYPE_DATE_TIME:
+							bson_append_int64(node,c_name,strlen(c_name),(int64_t) sqlite3_column_int64(get_stmt,i));
+						default:
+							g_error("SQLite Result and namespace scheme definition inconsistent.");
+							goto error;
+					}
+					break;
+				case SQLITE_FLOAT:
+					switch(smd_get_type(&namespace_scheme_iter))
+					{
+						case JSMD_TYPE_FLOAT:
+						case JSMD_TYPE_FLOAT_16:
+						case JSMD_TYPE_FLOAT_32:
+						case JSMD_TYPE_FLOAT_64:
+							bson_append_double(node,c_name,strlen(c_name),sqlite3_column_double(get_stmt,i));
+							break;
+						default:
+							g_error("SQLite Result and namespace scheme definition inconsistent.");
+							goto error;
+					}
 					break;
 				case SQLITE3_TEXT:
-					value = sqlite3_column_blob(get_stmt,i);
-					bson_append_utf8(result,c_name,strlen(c_name),value,strlen(value));
-					break;			
+					switch(smd_get_type(&namespace_scheme_iter))
+					{
+						case JSMD_TYPE_TEXT:
+							value = sqlite3_column_blob(get_stmt,i);
+							bson_append_utf8(node,c_name,strlen(c_name),value,strlen(value));
+							break;
+						default:
+							g_error("SQLite Result and namespace scheme definition inconsistent.");
+							goto error;
+					}
+					break;
+				case SQLITE_BLOB:
+					switch(smd_get_type(&namespace_scheme_iter))
+					{
+						case JSMD_TYPE_FLOAT_256:
+							bytes += 16; // Size difference from 256bits to 128bits 
+						case JSMD_TYPE_FLOAT_128:
+						case JSMD_TYPE_INTEGER_128:
+						case JSMD_TYPE_UNSIGNED_INTEGER_128:
+							bytes += 8; // Size difference from 128bits to 64bits 
+						case JSMD_TYPE_UNSIGNED_INTEGER:
+						case JSMD_TYPE_UNSIGNED_INTEGER_64:
+							bytes += 8; // Size of 64 Bit unsigned integer
+							length = sqlite3_column_bytes(get_stmt,i);
+							if(bytes != length)
+							{
+								g_error("BLOB size mismatch.");
+								goto error;
+							}
+
+							value = sqlite3_column_blob(get_stmt,i);
+							bson_append_binary(node,c_name,strlen(c_name),BSON_SUBTYPE_BINARY,value,length);
+							break;
+						default:
+							g_error("SQLite Result and namespace scheme definition inconsistent.");
+							goto error;
+					}
+					break;
 				default:
 				  // This should not happen
 					g_error("Found not supported column type in sqlite result");
+					goto error;
 					break;
 			}
 		}
@@ -471,7 +639,8 @@ backend_get (gchar const* namespace, gchar const* key, bson_t const* node)
 
 	return TRUE;
 	error:
-		return FALSE;
+			g_error("A non recoverable Error occured");
+			return FALSE;
 }
 
 static
