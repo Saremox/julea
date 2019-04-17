@@ -52,44 +52,44 @@ struct JSMD;
 struct JSMD_Scheme;
 struct JSMD_Search;
 
-typedef struct JSMD* JSMD;
-typedef struct JSMD_Scheme* JSMD_Scheme;
-typedef struct JSMD_Search* JSMD_Search;
+typedef struct JSMD JSMD;
+typedef struct JSMD_Scheme JSMD_Scheme;
+typedef struct JSMD_Search JSMD_Search;
 
 typedef void (*JSMD_Search_foreach_callback) (bson_t const*, gpointer);
 
-int64_t j_smd_type_string2int(const gchar*);
-gchar*  j_smd_type_int2string(int64_t);
+JSMD_TYPE j_smd_type_string2type(const gchar*);
+gchar*    j_smd_type_type2string(JSMD_TYPE);
 
-bool j_smd_scheme_new(JSMD_Scheme*);
-bool j_smd_scheme_ref(JSMD_Scheme);
-bool j_smd_scheme_unref(JSMD_Scheme*);
+JSMD_Scheme* j_smd_scheme_new(const gchar*);
+void j_smd_scheme_ref(JSMD_Scheme*);
+void j_smd_scheme_unref(JSMD_Scheme*);
 bool j_smd_scheme_field_add(const gchar*, JSMD_TYPE);
 bool j_smd_scheme_field_del(const gchar*);
 
-void j_smd_scheme_apply(const gchar*, const JSMD_Scheme, JBatch*);
-void j_smd_scheme_get(const gchar*, JSMD_Scheme*, JBatch*);
+void j_smd_scheme_apply(JSMD_Scheme*, JBatch*);
+void j_smd_scheme_get(JSMD_Scheme*, JBatch*);
 
-bool j_smd_new(const gchar*, const gchar*, JSMD*);
-bool j_smd_ref(JSMD);
-bool j_smd_unref(JSMD*);
-bool j_smd_field_set(JSMD, const gchar*, void*);
-bool j_smd_field_get(JSMD, const gchar*, void**);
+JSMD* j_smd_new(const gchar*, const gchar*);
+void j_smd_ref(JSMD*);
+void j_smd_unref(JSMD*);
+bool j_smd_field_set(JSMD*, const gchar*, void*);
+bool j_smd_field_get(JSMD*, const gchar*, void**);
 
-void j_smd_insert(const gchar*, const gchar*, const bson_t*, JBatch*);
-void j_smd_get(const gchar*, const gchar*, const bson_t*, JBatch*);
-void j_smd_update(const gchar*, const gchar*, const bson_t*, JBatch*);
-void j_smd_delete(const gchar*, const gchar*, const bson_t*, JBatch*);
+void j_smd_insert(JSMD*, JBatch*);
+void j_smd_get(JSMD*, JBatch*);
+void j_smd_update(JSMD*, JBatch*);
+void j_smd_delete(JSMD*, JBatch*);
 
-bool j_smd_search_new(JSMD_Search*,const gchar*);
-void j_smd_search_ref(JSMD_Search);
+JSMD_Search* j_smd_search_new(const gchar*);
+void j_smd_search_ref(JSMD_Search*);
 void j_smd_search_unref(JSMD_Search*);
 
-bool j_smd_search_execute(JSMD_Search);
-uint64_t j_smd_search_num_results(JSMD_Search);
-bool j_smd_search_cur_item(JSMD_Search, bson_t*);
-bool j_smd_search_iterate(JSMD_Search);
-bool j_smd_search_foreach(JSMD_Search, JSMD_Search_foreach_callback, gpointer);
+bool j_smd_search_execute(JSMD_Search*);
+uint64_t j_smd_search_num_results(JSMD_Search*);
+bool j_smd_search_cur_item(JSMD_Search*, bson_t*);
+bool j_smd_search_iterate(JSMD_Search*);
+bool j_smd_search_foreach(JSMD_Search*, JSMD_Search_foreach_callback, gpointer);
 
 G_END_DECLS
 
