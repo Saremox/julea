@@ -178,7 +178,7 @@ j_backend_load_client (gchar const* name, gchar const* component, JBackendType t
 {
 	g_return_val_if_fail(name != NULL, FALSE);
 	g_return_val_if_fail(component != NULL, FALSE);
-	g_return_val_if_fail(type == J_BACKEND_TYPE_OBJECT || type == J_BACKEND_TYPE_KV, FALSE);
+	g_return_val_if_fail(type == J_BACKEND_TYPE_OBJECT || type == J_BACKEND_TYPE_KV || type == J_BACKEND_TYPE_SMD, FALSE);
 	g_return_val_if_fail(module != NULL, FALSE);
 	g_return_val_if_fail(backend != NULL, FALSE);
 
@@ -200,7 +200,7 @@ j_backend_load_server (gchar const* name, gchar const* component, JBackendType t
 {
 	g_return_val_if_fail(name != NULL, FALSE);
 	g_return_val_if_fail(component != NULL, FALSE);
-	g_return_val_if_fail(type == J_BACKEND_TYPE_OBJECT || type == J_BACKEND_TYPE_KV, FALSE);
+	g_return_val_if_fail(type == J_BACKEND_TYPE_OBJECT || type == J_BACKEND_TYPE_KV || type == J_BACKEND_TYPE_SMD, FALSE);
 	g_return_val_if_fail(module != NULL, FALSE);
 	g_return_val_if_fail(backend != NULL, FALSE);
 
@@ -556,7 +556,7 @@ j_backend_smd_init (JBackend* backend, gchar const* path)
 	g_return_val_if_fail(path != NULL, FALSE);
 
 	j_trace_enter("smd_init", "%s", path);
-	ret = backend->kv.backend_init(path);
+	ret = backend->smd.backend_init(path);
 	j_trace_leave("smd_init");
 
 	return ret;
@@ -662,7 +662,7 @@ j_backend_smd_delete (JBackend* backend, gchar const* namespace,gchar const* key
 }
 
 gboolean 
-j_backend_smd_get (JBackend* backend, gchar const* namespace,gchar const* key, bson_t const* node)
+j_backend_smd_get (JBackend* backend, gchar const* namespace,gchar const* key, bson_t* node)
 {
 	gboolean ret;
 

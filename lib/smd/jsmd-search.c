@@ -29,96 +29,83 @@
 #include <bson.h>
 
 #include <smd/jsmd.h>
-#include <smd/jsmd-type.h>
-#include <smd/jsmd-scheme.h>
-#include <smd/jsmd-search.h>
 
 #include <julea.h>
 #include <julea-internal.h>
 
+#include <smd/jsmd-type.h>
+#include <smd/jsmd-scheme.h>
+#include <smd/jsmd-search.h>
+
 /**
- * \defgroup JSMD SMD
+ * \defgroup JSMD SMD SEARCH
  *
  * Data structures and functions for managing Structured Metadata.
  *
  * @{
  **/
 
-struct JSMD 
+struct JSMD_Search
 {
-  /**
-	 * The namespace.
-	 **/
-	gchar* namespace;
-
-	/**
-	 * The key.
-	 **/
-	gchar* key;
-
   /**
    * Scheme Cache ref 
    */
   JSMD_Scheme* scheme;
-
   /**
-   * Bson Tree holding item information 
-   */
-  bson_t tree;
-
+	 * The namespace.
+	 **/
+	gchar* namespace;
   /**
 	 * The reference count.
 	 **/
 	gint ref_count;
 };
 
-JSMD* j_smd_new(JSMD_Scheme* scheme, const gchar* key)
+
+JSMD_Search* j_smd_search_new(JSMD_Scheme* scheme)
 {
-  JSMD* item = NULL;
+  JSMD_Search* search;
 
   g_return_val_if_fail(scheme != NULL, NULL);
-  g_return_val_if_fail(key != NULL, NULL);
 
   j_trace_enter(G_STRFUNC, NULL);
 
+  search = g_slice_new(JSMD_Search);
+
+  search->namespace = g_strdup(j_smd_scheme_namespace(scheme));
+  search->scheme = scheme;
+
   j_smd_scheme_ref(scheme);
-
-  item = g_slice_new(JSMD);
-
-  item->namespace = g_strdup(j_smd_scheme_namespace(scheme));
-  item->key = g_strdup(key);
-  bson_init(&item->tree);
 
   j_trace_leave(G_STRFUNC);
 
-	return item;
+	return search;
 }
 
-JSMD* j_smd_ref(JSMD* item)
+JSMD_Search* j_smd_search_ref(JSMD_Search* search)
 {
-	g_return_val_if_fail(item != NULL, NULL);
+	g_return_val_if_fail(search != NULL, NULL);
 
 	j_trace_enter(G_STRFUNC, NULL);
 
-	g_atomic_int_inc(&(item->ref_count));
+	g_atomic_int_inc(&(search->ref_count));
 
 	j_trace_leave(G_STRFUNC);
 
-	return item;
+	return search;
 }
 
-void j_smd_unref(JSMD* item)
+void j_smd_search_unref(JSMD_Search* search)
 {
-	g_return_if_fail(item != NULL);
+	g_return_if_fail(search != NULL);
 
 	j_trace_enter(G_STRFUNC, NULL);
 
-	if (g_atomic_int_dec_and_test(&(item->ref_count)))
+	if (g_atomic_int_dec_and_test(&(search->ref_count)))
 	{
-    g_free(item->namespace);
-    j_smd_scheme_unref(item->scheme);
-    bson_destroy(&item->tree);
-		g_slice_free(JSMD, item);
+    g_free(search->namespace);
+    j_smd_scheme_unref(search->scheme);
+		g_slice_free(JSMD_Search, search);
 	}
 
 	j_trace_leave(G_STRFUNC);

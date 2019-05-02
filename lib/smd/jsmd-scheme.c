@@ -29,99 +29,82 @@
 #include <bson.h>
 
 #include <smd/jsmd.h>
-#include <smd/jsmd-type.h>
-#include <smd/jsmd-scheme.h>
-#include <smd/jsmd-search.h>
 
 #include <julea.h>
 #include <julea-internal.h>
+#include <smd/jsmd-type.h>
+#include <smd/jsmd-scheme.h>
 
 /**
- * \defgroup JSMD SMD
+ * \defgroup JSMD SMD SEARCH
  *
  * Data structures and functions for managing Structured Metadata.
  *
  * @{
  **/
 
-struct JSMD 
+struct JSMD_Scheme
 {
   /**
 	 * The namespace.
 	 **/
 	gchar* namespace;
-
-	/**
-	 * The key.
-	 **/
-	gchar* key;
-
-  /**
-   * Scheme Cache ref 
-   */
-  JSMD_Scheme* scheme;
-
-  /**
-   * Bson Tree holding item information 
-   */
-  bson_t tree;
-
   /**
 	 * The reference count.
 	 **/
 	gint ref_count;
 };
 
-JSMD* j_smd_new(JSMD_Scheme* scheme, const gchar* key)
+JSMD_Scheme* j_smd_scheme_new(const gchar* namespace)
 {
-  JSMD* item = NULL;
+  JSMD_Scheme* scheme;
 
-  g_return_val_if_fail(scheme != NULL, NULL);
-  g_return_val_if_fail(key != NULL, NULL);
+  g_return_val_if_fail(namespace != NULL, NULL);
 
   j_trace_enter(G_STRFUNC, NULL);
 
-  j_smd_scheme_ref(scheme);
+  scheme = g_slice_new(JSMD_Scheme);
 
-  item = g_slice_new(JSMD);
-
-  item->namespace = g_strdup(j_smd_scheme_namespace(scheme));
-  item->key = g_strdup(key);
-  bson_init(&item->tree);
+  scheme->namespace = g_strdup(namespace);
 
   j_trace_leave(G_STRFUNC);
 
-	return item;
+	return scheme;
 }
 
-JSMD* j_smd_ref(JSMD* item)
+JSMD_Scheme* j_smd_scheme_ref(JSMD_Scheme* scheme)
 {
-	g_return_val_if_fail(item != NULL, NULL);
+	g_return_val_if_fail(scheme != NULL, NULL);
 
 	j_trace_enter(G_STRFUNC, NULL);
 
-	g_atomic_int_inc(&(item->ref_count));
+	g_atomic_int_inc(&(scheme->ref_count));
 
 	j_trace_leave(G_STRFUNC);
 
-	return item;
+	return scheme;
 }
 
-void j_smd_unref(JSMD* item)
+void j_smd_scheme_unref(JSMD_Scheme* scheme)
 {
-	g_return_if_fail(item != NULL);
+	g_return_if_fail(scheme != NULL);
 
 	j_trace_enter(G_STRFUNC, NULL);
 
-	if (g_atomic_int_dec_and_test(&(item->ref_count)))
+	if (g_atomic_int_dec_and_test(&(scheme->ref_count)))
 	{
-    g_free(item->namespace);
-    j_smd_scheme_unref(item->scheme);
-    bson_destroy(&item->tree);
-		g_slice_free(JSMD, item);
+    g_free(scheme->namespace);
+
+		g_slice_free(JSMD_Scheme, scheme);
 	}
 
 	j_trace_leave(G_STRFUNC);
+}
+
+const gchar* j_smd_scheme_namespace(JSMD_Scheme* scheme)
+{
+  g_return_val_if_fail(scheme != NULL, NULL);
+  return scheme->namespace;
 }
 
 /**

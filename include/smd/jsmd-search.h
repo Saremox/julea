@@ -20,8 +20,8 @@
  * \file
  **/
 
-#ifndef JULEA_SMD_SMD_H
-#define JULEA_SMD_SMD_H
+#ifndef JULEA_SMD_SMD_SEARCH_H
+#define JULEA_SMD_SMD_SEARCH_H
 
 #if !defined(JULEA_SMD_H) && !defined(JULEA_SMD_COMPILATION)
 #error "Only <julea-smd.h> can be included directly."
@@ -32,26 +32,23 @@
 #include <julea.h>
 #include <smd/jsmd-type.h>
 #include <smd/jsmd-scheme.h>
-#include <smd/jsmd-search.h>
-
 
 G_BEGIN_DECLS
 
-#undef JSMD_REGISTER_TYPE
+typedef void (*JSMD_Search_foreach_callback) (bson_t const*, gpointer);
 
-struct JSMD;
-typedef struct JSMD JSMD;
+struct JSMD_Search;
+typedef struct JSMD_Search JSMD_Search;
 
-JSMD* j_smd_new(JSMD_Scheme*, const gchar*);
-JSMD* j_smd_ref(JSMD*);
-void j_smd_unref(JSMD*);
-bool j_smd_field_set(JSMD*, const gchar*, void*);
-bool j_smd_field_get(JSMD*, const gchar*, void**);
+JSMD_Search* j_smd_search_new(JSMD_Scheme*);
+JSMD_Search* j_smd_search_ref(JSMD_Search*);
+void j_smd_search_unref(JSMD_Search*);
 
-void j_smd_insert(JSMD*, JBatch*);
-void j_smd_get(JSMD*, JBatch*);
-void j_smd_update(JSMD*, JBatch*);
-void j_smd_delete(JSMD*, JBatch*);
+bool j_smd_search_execute(JSMD_Search*);
+uint64_t j_smd_search_num_results(JSMD_Search*);
+bool j_smd_search_cur_item(JSMD_Search*, bson_t*);
+bool j_smd_search_iterate(JSMD_Search*);
+bool j_smd_search_foreach(JSMD_Search*, JSMD_Search_foreach_callback, gpointer);
 
 G_END_DECLS
 

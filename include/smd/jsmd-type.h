@@ -20,6 +20,27 @@
  * \file
  **/
 
+#ifndef JULEA_SMD_SMD_TYPE_H
+#define JULEA_SMD_SMD_TYPE_H
+
+#if !defined(JULEA_SMD_H) && !defined(JULEA_SMD_COMPILATION)
+#error "Only <julea-smd.h> can be included directly."
+#endif
+
+#define JSMD_REGISTER_TYPE(enum,string) enum,
+typedef enum JSMD_TYPE{
+#include <smd/jsmd-type.h>
+} JSMD_TYPE;
+
+#undef JSMD_REGISTER_TYPE
+
+JSMD_TYPE j_smd_type_string2type(const gchar*);
+gchar*    j_smd_type_type2string(JSMD_TYPE);
+
+#endif
+
+#ifdef JSMD_REGISTER_TYPE
+
 JSMD_REGISTER_TYPE(JSMD_TYPE_INVALID_BSON , "ERROR: type of bson value must be of STRING or INTEGER")
 JSMD_REGISTER_TYPE(JSMD_TYPE_UNKNOWN,     "ERROR: unknown type in bson value")
 JSMD_REGISTER_TYPE(JSMD_TYPE_INTEGER ,    "integer")
@@ -43,3 +64,5 @@ JSMD_REGISTER_TYPE(JSMD_TYPE_FLOAT_256,   "float256")
 JSMD_REGISTER_TYPE(JSMD_TYPE_TEXT ,       "text")
 JSMD_REGISTER_TYPE(JSMD_TYPE_DATE ,       "date")
 JSMD_REGISTER_TYPE(JSMD_TYPE_DATE_TIME ,       "date time")
+
+#endif

@@ -20,8 +20,8 @@
  * \file
  **/
 
-#ifndef JULEA_SMD_SMD_H
-#define JULEA_SMD_SMD_H
+#ifndef JULEA_SMD_SMD_SCHEME_H
+#define JULEA_SMD_SMD_SCHEME_H
 
 #if !defined(JULEA_SMD_H) && !defined(JULEA_SMD_COMPILATION)
 #error "Only <julea-smd.h> can be included directly."
@@ -31,27 +31,22 @@
 
 #include <julea.h>
 #include <smd/jsmd-type.h>
-#include <smd/jsmd-scheme.h>
-#include <smd/jsmd-search.h>
-
 
 G_BEGIN_DECLS
 
-#undef JSMD_REGISTER_TYPE
+struct JSMD_Scheme;
+typedef struct JSMD_Scheme JSMD_Scheme;
 
-struct JSMD;
-typedef struct JSMD JSMD;
+JSMD_Scheme* j_smd_scheme_new(const gchar*);
+JSMD_Scheme* j_smd_scheme_ref(JSMD_Scheme*);
+void j_smd_scheme_unref(JSMD_Scheme*);
+bool j_smd_scheme_field_add(const gchar*, JSMD_TYPE);
+bool j_smd_scheme_field_del(const gchar*);
 
-JSMD* j_smd_new(JSMD_Scheme*, const gchar*);
-JSMD* j_smd_ref(JSMD*);
-void j_smd_unref(JSMD*);
-bool j_smd_field_set(JSMD*, const gchar*, void*);
-bool j_smd_field_get(JSMD*, const gchar*, void**);
+void j_smd_scheme_apply(JSMD_Scheme*, JBatch*);
+void j_smd_scheme_get(JSMD_Scheme*, JBatch*);
 
-void j_smd_insert(JSMD*, JBatch*);
-void j_smd_get(JSMD*, JBatch*);
-void j_smd_update(JSMD*, JBatch*);
-void j_smd_delete(JSMD*, JBatch*);
+const gchar* j_smd_scheme_namespace(JSMD_Scheme*);
 
 G_END_DECLS
 

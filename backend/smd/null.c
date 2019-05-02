@@ -100,7 +100,7 @@ backend_delete (gchar const* namespace, gchar const* key, bson_t const* node)
 
 static
 gboolean 
-backend_get (gchar const* namespace, gchar const* key, bson_t const* node)
+backend_get (gchar const* namespace, gchar const* key, bson_t* node)
 {
 	g_return_val_if_fail(namespace != NULL, FALSE);
 	g_return_val_if_fail(key != NULL, FALSE);
