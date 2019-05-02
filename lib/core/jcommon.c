@@ -192,7 +192,7 @@ j_init (void)
 	{
 		if (common->smd_backend == NULL || !j_backend_smd_init(common->smd_backend, smd_path))
 		{
-			J_CRITICAL("Could not initialize kv backend %s.\n", kv_backend);
+			J_CRITICAL("Could not initialize smd backend %s.\n", kv_backend);
 			goto error;
 		}
 	}
