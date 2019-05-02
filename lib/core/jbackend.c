@@ -154,6 +154,7 @@ j_backend_load (gchar const* name, JBackendComponent component, JBackendType typ
 				|| tmp_backend->smd.backend_iterate == NULL
 				|| tmp_backend->smd.backend_error == NULL)
 		{
+			J_CRITICAL("failed to load %s %s backend: missing symbols",name,type_str);
 			goto error;
 		}
 	}
