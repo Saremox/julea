@@ -30,6 +30,7 @@
 #include <sqlite3.h>
 
 #include <julea.h>
+#include <julea-internal.h>
 #include <julea-smd.h>
 
 static sqlite3* backend_db = NULL;
@@ -224,6 +225,8 @@ backend_init (gchar const* path)
 	dirname = g_path_get_dirname(path);
 	g_mkdir_with_parents(dirname, 0700);
 
+	J_INFO("path - %s", path);
+
 	if (sqlite3_open(path, &backend_db) != SQLITE_OK)
 	{
 		goto error;
@@ -233,11 +236,13 @@ backend_init (gchar const* path)
 
 	if (sqlite3_exec(backend_db, "CREATE TABLE IF NOT EXISTS _julea_structure_ (namespace TEXT NOT NULL, cached_scheme BLOB NOT NULL);", NULL, NULL, NULL) != SQLITE_OK)
 	{
+		J_CRITICAL("failed to create julea_smd management structure: %s",sqlite3_errmsg(backend_db))
 		goto error;
 	}
 
 	if (sqlite3_exec(backend_db, "CREATE UNIQUE INDEX IF NOT EXISTS _julea_structure_index_ ON _julea_structure_ (namespace);", NULL, NULL, NULL) != SQLITE_OK)
 	{
+		J_CRITICAL("failed to create julea_smd management structure: %s",sqlite3_errmsg(backend_db))
 		goto error;
 	}
 
@@ -270,7 +275,8 @@ backend_apply_scheme (gchar const* namespace, bson_t const* scheme)
 
 	if (sqlite3_exec(backend_db, "BEGIN TRANSACTION;", NULL, NULL, NULL) != SQLITE_OK)
 	{
-			goto error;
+		J_WARNING("cannot begin transaction: %s",sqlite3_errmsg(backend_db))
+		goto error;
 	}
 
 	// Create SQL Create Table statement from json document
@@ -279,6 +285,7 @@ backend_apply_scheme (gchar const* namespace, bson_t const* scheme)
 	{
 		if(sqlite3_exec(backend_db, create_querry, NULL, NULL, NULL) != SQLITE_OK)
 		{
+			J_INFO("failed to execute querry: %s : %s",create_querry,sqlite3_errmsg(backend_db))
 			free(create_querry);
 			goto error;
 		}
@@ -290,15 +297,31 @@ backend_apply_scheme (gchar const* namespace, bson_t const* scheme)
 	}
 
 	// Insert into namespace and scheme cache
-	sqlite3_prepare_v2(backend_db, "INSERT INTO _julea_structure_ (namespace, cached_scheme) VALUES (?, ?);", -1, &insert_scheme_cache, NULL);
-	sqlite3_bind_text(insert_scheme_cache, 1, namespace, -1, NULL);
-	sqlite3_bind_blob(insert_scheme_cache, 2, bson_get_data(scheme), scheme->len, NULL);
-	sqlite3_step(insert_scheme_cache);
-	sqlite3_finalize(insert_scheme_cache);
+	if(sqlite3_prepare_v2(backend_db, "INSERT INTO _julea_structure_ (namespace, cached_scheme) VALUES (?, ?);", -1, &insert_scheme_cache, NULL) != SQLITE_OK)
+	{
+		J_INFO("failed to execute querry: %s : %s",create_querry,sqlite3_errmsg(backend_db));
+	}
+	if(sqlite3_bind_text(insert_scheme_cache, 1, namespace, -1, NULL) != SQLITE_OK)
+	{
+		J_INFO("failed to execute querry: %s : %s",create_querry,sqlite3_errmsg(backend_db));
+	}
+	if(sqlite3_bind_blob(insert_scheme_cache, 2, bson_get_data(scheme), scheme->len, NULL) != SQLITE_OK)
+	{
+		J_INFO("failed to execute querry: %s : %s",create_querry,sqlite3_errmsg(backend_db));
+	}
+	if(sqlite3_step(insert_scheme_cache) != SQLITE_OK)
+	{
+		J_INFO("failed to execute querry: %s : %s",create_querry,sqlite3_errmsg(backend_db));
+	}
+	if(sqlite3_finalize(insert_scheme_cache) != SQLITE_OK)
+	{
+		J_INFO("failed to execute querry: %s : %s",create_querry,sqlite3_errmsg(backend_db));
+	}
 
 	if (sqlite3_exec(backend_db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK)
 	{
-			goto error;
+		J_WARNING("cannot end transaction: %s",sqlite3_errmsg(backend_db))
+		goto error;
 	}
 
 	return TRUE;
