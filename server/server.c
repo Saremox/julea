@@ -441,8 +441,8 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 
 					if (jd_smd_backend != NULL)
 					{
-						j_message_add_operation(reply, 3);
-						j_message_append_n(reply, "smd", 3);
+						j_message_add_operation(reply, 4);
+						j_message_append_n(reply, "smd", 4);
 					}
 
 					j_message_send(reply, connection);
@@ -878,7 +878,7 @@ main (int argc, char** argv)
 
 	object_path = object_path_port;
 	kv_path = kv_path_port;
-	smd_path = kv_path_port;
+	smd_path = smd_path_port;
 #endif
 
 	if (j_backend_load_server(object_backend, object_component, J_BACKEND_TYPE_OBJECT, &object_module, &jd_object_backend))
@@ -901,9 +901,9 @@ main (int argc, char** argv)
 
 	if (j_backend_load_server(smd_backend, smd_component, J_BACKEND_TYPE_SMD, &smd_module, &jd_smd_backend))
 	{
-		if (jd_smd_backend == NULL || !j_backend_kv_init(jd_smd_backend, smd_path))
+		if (jd_smd_backend == NULL || !j_backend_smd_init(jd_smd_backend, smd_path))
 		{
-			J_CRITICAL("Could not initialize kv backend %s.\n", smd_backend);
+			J_CRITICAL("Could not initialize smd backend %s.\n", smd_backend);
 			return 1;
 		}
 	}
