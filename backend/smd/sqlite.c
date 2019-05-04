@@ -297,7 +297,7 @@ backend_apply_scheme (gchar const* namespace, bson_t const* scheme)
 	}
 
 	// Insert into namespace and scheme cache
-	if(sqlite3_prepare_v2(backend_db, "INSERT INTO _julea_structure_ (namespace, cached_scheme) VALUES (?, ?);", -1, &insert_scheme_cache, NULL) != SQLITE_OK)
+	if(sqlite3_prepare_v2(backend_db, "INSERT INTO _julea_structure_ (`namespace`, `cached_scheme`) VALUES (?, ?);", -1, &insert_scheme_cache, NULL) != SQLITE_OK)
 	{
 		J_INFO("failed to execute querry: %s : %s",create_querry,sqlite3_errmsg(backend_db));
 	}
@@ -309,7 +309,7 @@ backend_apply_scheme (gchar const* namespace, bson_t const* scheme)
 	{
 		J_INFO("failed to execute querry: %s : %s",create_querry,sqlite3_errmsg(backend_db));
 	}
-	if(sqlite3_step(insert_scheme_cache) != SQLITE_OK)
+	if(sqlite3_step(insert_scheme_cache) != SQLITE_DONE)
 	{
 		J_INFO("failed to execute querry: %s : %s",create_querry,sqlite3_errmsg(backend_db));
 	}
@@ -341,22 +341,31 @@ backend_get_scheme (gchar const* namespace, bson_t* scheme)
 	g_return_val_if_fail(namespace != NULL, FALSE);
 	g_return_val_if_fail(scheme != NULL, FALSE);
 
-	sqlite3_prepare_v2(backend_db, "SELECT value FROM _julea_structure_ WHERE namespace = ?;", -1, &stmt, NULL);
+	sqlite3_prepare_v2(backend_db, "SELECT cached_scheme FROM _julea_structure_ WHERE namespace = ?;", -1, &stmt, NULL);
 	sqlite3_bind_text(stmt, 1, namespace, -1, NULL);
 
 	ret = sqlite3_step(stmt);
 
 	if (ret == SQLITE_ROW)
 	{
-		bson_t tmp[1];
+		bson_t tmp;
 	
 		result = sqlite3_column_blob(stmt, 0);
 		result_len = sqlite3_column_bytes(stmt, 0);
 
 		// FIXME check whether copies can be avoided
-		bson_init_static(tmp, result, result_len);
-		bson_copy_to(tmp, scheme);
+		bson_init_static(&tmp, result, result_len);
+		bson_copy_to(&tmp, scheme);
 	}
+	else if(ret != SQLITE_DONE)
+	{
+		J_WARNING("SQL error : %s",sqlite3_errmsg(backend_db));
+	}
+	else
+	{
+		J_WARNING("Namespace %s not found",namespace);
+	}
+	
 
 	sqlite3_finalize(stmt);
 

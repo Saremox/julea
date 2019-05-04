@@ -296,7 +296,7 @@ static gboolean _j_smd_scheme_get_exec(JList* operations, JSemantics* semantics)
 			
 			if(message[server_index] == NULL)
 			{
-				message[server_index] = j_message_new(J_MESSAGE_SMD_SCHEMA_APPLY,strlen(scheme->namespace) +1);
+				message[server_index] = j_message_new(J_MESSAGE_SMD_SCHEMA_GET,strlen(scheme->namespace) +1);
 				j_message_set_safety(message[server_index], semantics);
 			}
 
@@ -331,7 +331,6 @@ static gboolean _j_smd_scheme_get_exec(JList* operations, JSemantics* semantics)
 				}
 
 				j_message_receive(reply[i], smd_connection);
-				j_message_unref(message[i]);
 				j_connection_pool_push_smd(i, smd_connection);
 			}
 		}
@@ -346,12 +345,21 @@ static gboolean _j_smd_scheme_get_exec(JList* operations, JSemantics* semantics)
 			guint32 server_index = j_helper_hash(scheme->namespace) % smd_server_cnt;
 			
 			bson_payload_length = j_message_get_4(reply[server_index]);
-			bson_payload = j_message_get_n(reply[server_index],bson_payload_length);
-			bson_init_static(&bson_data,bson_payload,bson_payload_length);
-			bson_copy_to(&bson_data,&scheme->tree);
+			if(bson_payload_length >= 0)
+			{
+				bson_payload = j_message_get_n(reply[server_index],bson_payload_length);
+				bson_init_static(&bson_data,bson_payload,bson_payload_length);
+				bson_copy_to(&bson_data,&scheme->tree);
+			}
+			else
+			{
+				J_WARNING("Received empty bson tree for namespace %s",scheme->namespace);
+			}
+			
 		}
 		for(guint32 i = 0; i < smd_server_cnt ; i++)
 		{
+			j_message_unref(message[i]);
 			j_message_unref(reply[i]);
 		}
 		g_free(message);
@@ -404,6 +412,8 @@ void j_smd_scheme_get(JSMD_Scheme* scheme, JBatch* batch)
 	op->key = scheme->namespace;
 	op->exec_func = _j_smd_scheme_get_exec;
 	op->free_func = _j_smd_scheme_get_free;
+
+	j_batch_add(batch,op);
 
 	j_trace_leave(G_STRFUNC);
 }

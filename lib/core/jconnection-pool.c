@@ -161,7 +161,7 @@ j_connection_pool_fini (void)
 			g_object_unref(connection);
 		}
 
-		g_async_queue_unref(pool->kv_queues[i].queue);
+		g_async_queue_unref(pool->smd_queues[i].queue);
 	}
 
 	j_configuration_unref(pool->configuration);

@@ -631,7 +631,7 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 						if(j_backend_smd_apply_scheme(jd_smd_backend,namespace,&bson_data) && reply != NULL)
 						{
 							j_message_add_operation(reply,strlen(namespace)+1);
-							j_message_append_n(reply,reply,strlen(namespace)+1);
+							j_message_append_n(reply,namespace,strlen(namespace)+1);
 						}
 					}
 					if (reply != NULL)
@@ -645,15 +645,18 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 					bson_t bson_data;
 					g_autoptr(JMessage) reply = NULL;
 					reply = j_message_new_reply(message);
-					namespace = j_message_get_string(message);
-
+					
 					for (i = 0; i < operation_count; i++)
 					{
-						j_backend_smd_get_scheme(jd_smd_backend,namespace,&bson_data);
+						namespace = j_message_get_string(message);
+						if(!j_backend_smd_get_scheme(jd_smd_backend,namespace,&bson_data))
+						{
+							J_WARNING("Failed to retrieve scheme for %s",namespace)
+						}
 						j_message_add_operation(reply, 4 + bson_data.len);
-						j_message_append_n(reply,namespace,strlen(namespace)+1);
 						j_message_append_4(reply,&bson_data.len);
 						j_message_append_n(reply,bson_get_data(&bson_data),bson_data.len);
+						bson_destroy(&bson_data);
 					}
 					j_message_send(reply,connection);
 				}
