@@ -56,6 +56,9 @@ main (int argc, char** argv)
 	// HDF5 client
 	test_hdf();
 
+	// SMD
+	test_smd();
+
 	ret = g_test_run();
 
 	return ret;

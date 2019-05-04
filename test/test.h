@@ -39,5 +39,6 @@ void test_item (void);
 void test_uri (void);
 
 void test_hdf (void);
+void test_smd (void);
 
 #endif
