@@ -40,8 +40,7 @@ typedef struct JSMD_Scheme JSMD_Scheme;
 JSMD_Scheme* j_smd_scheme_new(const gchar*);
 JSMD_Scheme* j_smd_scheme_ref(JSMD_Scheme*);
 void j_smd_scheme_unref(JSMD_Scheme*);
-bool j_smd_scheme_field_add(const gchar*, JSMD_TYPE);
-bool j_smd_scheme_field_del(const gchar*);
+bool j_smd_scheme_field_add(JSMD_Scheme*, const gchar*, JSMD_TYPE);
 
 void j_smd_scheme_apply(JSMD_Scheme*, JBatch*);
 void j_smd_scheme_get(JSMD_Scheme*, JBatch*);
