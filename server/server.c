@@ -610,24 +610,30 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 				break;
 			case J_MESSAGE_SMD_SCHEMA_APPLY:
 				{
-					uint8_t* bson_payload;
+					g_autoptr(JMessage) reply = NULL;
+					gconstpointer bson_payload;
 					bson_t bson_data;
 					gsize bson_payload_length;
-					g_autoptr(JMessage) reply = NULL;
 
 					if (type_modifier & J_MESSAGE_FLAGS_SAFETY_NETWORK)
 					{
 						reply = j_message_new_reply(message);
 					}
 
-					namespace = j_message_get_string(message);
-					bson_payload_length = j_message_get_4(message);
-					bson_payload = j_message_get_n(message,bson_payload_length);
+					for (i = 0; i < operation_count; i++)
+					{
+						namespace = j_message_get_string(message);
+						bson_payload_length = j_message_get_4(message);
+						bson_payload = j_message_get_n(message,bson_payload_length);
 
-					bson_init_static(&bson_data,bson_payload,bson_payload_length);
+						bson_init_static(&bson_data,bson_payload,bson_payload_length);
 
-					j_backend_smd_apply_scheme(jd_smd_backend,namespace,&bson_data);
-
+						if(j_backend_smd_apply_scheme(jd_smd_backend,namespace,&bson_data) && reply != NULL)
+						{
+							j_message_add_operation(reply,strlen(namespace)+1);
+							j_message_append_n(reply,reply,strlen(namespace)+1);
+						}
+					}
 					if (reply != NULL)
 					{
 						j_message_send(reply, connection);
@@ -641,11 +647,14 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 					reply = j_message_new_reply(message);
 					namespace = j_message_get_string(message);
 
-					j_backend_smd_get_scheme(jd_smd_backend,namespace,&bson_data);
-					j_message_add_operation(reply, 4 + bson_data.len);
-					j_message_append_4(reply,&bson_data.len);
-					j_message_append_n(reply,bson_get_data(&bson_data),bson_data.len);
-
+					for (i = 0; i < operation_count; i++)
+					{
+						j_backend_smd_get_scheme(jd_smd_backend,namespace,&bson_data);
+						j_message_add_operation(reply, 4 + bson_data.len);
+						j_message_append_n(reply,namespace,strlen(namespace)+1);
+						j_message_append_4(reply,&bson_data.len);
+						j_message_append_n(reply,bson_get_data(&bson_data),bson_data.len);
+					}
 					j_message_send(reply,connection);
 				}
 				break;
