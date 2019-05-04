@@ -50,6 +50,9 @@ bool j_smd_search_cur_item(JSMD_Search*, bson_t*);
 bool j_smd_search_iterate(JSMD_Search*);
 bool j_smd_search_foreach(JSMD_Search*, JSMD_Search_foreach_callback, gpointer);
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(JSMD_Search,j_smd_search_unref)
+
+
 G_END_DECLS
 
 #endif

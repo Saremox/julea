@@ -53,6 +53,8 @@ void j_smd_get(JSMD*, JBatch*);
 void j_smd_update(JSMD*, JBatch*);
 void j_smd_delete(JSMD*, JBatch*);
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(JSMD,j_smd_unref)
+
 G_END_DECLS
 
 #endif

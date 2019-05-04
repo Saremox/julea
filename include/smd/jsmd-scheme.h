@@ -48,6 +48,8 @@ void j_smd_scheme_get(JSMD_Scheme*, JBatch*);
 
 const gchar* j_smd_scheme_namespace(JSMD_Scheme*);
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(JSMD_Scheme,j_smd_scheme_unref)
+
 G_END_DECLS
 
 #endif
