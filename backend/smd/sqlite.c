@@ -62,7 +62,7 @@ generate_create_table_stmt(gchar const* namespace, bson_t const* scheme)
 	bson_iter_t iter;
 	GString* create_querry = g_string_new(NULL);
 	g_string_append_printf(create_querry,
-							"CREATE TABLE `%s` (`key` NOT NULL TEXT PRIMARY KEY,",
+							"CREATE TABLE `%s` (`key` TEXT NOT NULL PRIMARY KEY,",
 							namespace);
 	if(! bson_iter_init(&iter, scheme))
 	{
@@ -78,36 +78,36 @@ generate_create_table_stmt(gchar const* namespace, bson_t const* scheme)
 			
 			case JSMD_TYPE_INTEGER_8:
 				g_string_append_printf(create_querry,
-										"\n %s TINYINT NOT NULL",
+										"\n `%s` TINYINT NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_INTEGER_16:
 				g_string_append_printf(create_querry,
-										"\n %s SMALLINT NOT NULL",
+										"\n `%s` SMALLINT NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			
 			case JSMD_TYPE_INTEGER_32:
 				g_string_append_printf(create_querry,
-											"\n %s INT NOT NULL",
+											"\n `%s` INT NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_INTEGER:
 			case JSMD_TYPE_INTEGER_64:
 				g_string_append_printf(create_querry,
-										"\n %s BIGINT NOT NULL",
+										"\n `%s` BIGINT NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_UNSIGNED_INTEGER_8:
 			case JSMD_TYPE_UNSIGNED_INTEGER_16:
 			case JSMD_TYPE_UNSIGNED_INTEGER_32:
 				g_string_append_printf(create_querry,
-										"\n %s INTEGER NOT NULL",
+										"\n `%s` INTEGER NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_TEXT:
 				g_string_append_printf(create_querry,
-										"\n %s TEXT NOT NULL",
+										"\n `%s` TEXT NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_FLOAT:
@@ -115,17 +115,17 @@ generate_create_table_stmt(gchar const* namespace, bson_t const* scheme)
 			case JSMD_TYPE_FLOAT_32:
 			case JSMD_TYPE_FLOAT_64:
 				g_string_append_printf(create_querry,
-										"\n %s REAL NOT NULL",
+										"\n `%s` REAL NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_DATE:
 				g_string_append_printf(create_querry,
-										"\n %s DATE NOT NULL",
+										"\n `%s` DATE NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_DATE_TIME:
 				g_string_append_printf(create_querry,
-										"\n %s DATETIME NOT NULL",
+										"\n `%s` DATETIME NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_INTEGER_128:
@@ -135,7 +135,7 @@ generate_create_table_stmt(gchar const* namespace, bson_t const* scheme)
 			case JSMD_TYPE_FLOAT_128:
 			case JSMD_TYPE_FLOAT_256:
 				g_string_append_printf(create_querry,
-										"\n %s BLOB NOT NULL",
+										"\n `%s` BLOB NOT NULL",
 										bson_iter_key(&iter));
 				break;
 			case JSMD_TYPE_UNKNOWN:
