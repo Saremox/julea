@@ -41,6 +41,7 @@ JSMD_Scheme* j_smd_scheme_new(const gchar*);
 JSMD_Scheme* j_smd_scheme_ref(JSMD_Scheme*);
 void j_smd_scheme_unref(JSMD_Scheme*);
 bool j_smd_scheme_field_add(JSMD_Scheme*, const gchar*, JSMD_TYPE);
+JSMD_TYPE j_smd_scheme_field_get(JSMD_Scheme*, const gchar*);
 
 void j_smd_scheme_apply(JSMD_Scheme*, JBatch*);
 void j_smd_scheme_get(JSMD_Scheme*, JBatch*);

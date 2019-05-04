@@ -154,6 +154,21 @@ bool j_smd_scheme_field_add(JSMD_Scheme* scheme, const gchar* field_name, JSMD_T
 	return ret;
 }
 
+JSMD_TYPE j_smd_scheme_field_get(JSMD_Scheme* scheme, const gchar* field_name)
+{
+	bson_iter_t iter;
+	JSMD_TYPE type = JSMD_TYPE_UNKNOWN;
+
+	if(bson_iter_init(&iter,&scheme->tree))
+	{
+		if(bson_iter_find(&iter,field_name))
+		{
+			type = bson_iter_as_int64(&iter);
+		}
+	}
+	return type;
+}
+
 static gboolean _j_smd_scheme_apply_exec(JList* operations, JSemantics* semantics)
 {
 	gboolean ret = TRUE;
