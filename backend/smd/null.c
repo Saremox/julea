@@ -89,11 +89,10 @@ backend_update (gchar const* namespace, gchar const* key, bson_t const* node)
 
 static
 gboolean 
-backend_delete (gchar const* namespace, gchar const* key, bson_t const* node)
+backend_delete (gchar const* namespace, gchar const* key)
 {
 	g_return_val_if_fail(namespace != NULL, FALSE);
 	g_return_val_if_fail(key != NULL, FALSE);
-	g_return_val_if_fail(node != NULL, FALSE);
 
 	return TRUE;
 }

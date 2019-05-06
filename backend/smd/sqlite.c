@@ -414,14 +414,12 @@ gboolean
 _backend_insert (gchar const* namespace, gchar const* key, bson_t const* node, gboolean allow_update)
 {
 	g_autoptr(sqlite3_stmt) insert_stmt = NULL;
-	g_autoptr(bson_t) insert_scheme;
+	g_autoptr(bson_t) insert_scheme = NULL;
 	bson_iter_t iter_node;
 	bson_iter_t iter_scheme;
 	g_autofree gchar* insert_querry = NULL;
 	int64_t insert_index;
 	int64_t num_keys_scheme;
-	
-	bson_init(insert_scheme);
 
 	if(!backend_get_scheme(namespace, insert_scheme))
 	{
@@ -591,11 +589,10 @@ backend_update (gchar const* namespace, gchar const* key, bson_t const* node)
 
 static
 gboolean 
-backend_delete (gchar const* namespace, gchar const* key, bson_t const* node)
+backend_delete (gchar const* namespace, gchar const* key)
 {
 	g_return_val_if_fail(namespace != NULL, FALSE);
 	g_return_val_if_fail(key != NULL, FALSE);
-	g_return_val_if_fail(node != NULL, FALSE);
 
 	return TRUE;
 }

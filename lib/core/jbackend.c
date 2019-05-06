@@ -646,14 +646,14 @@ j_backend_smd_update (JBackend* backend, gchar const* namespace,gchar const* key
 	g_return_val_if_fail(node != NULL, FALSE);
 
 	j_trace_enter("smd_update","%s", namespace);
-	ret = backend->smd.backend_insert(namespace,key,node);
+	ret = backend->smd.backend_update(namespace,key,node);
 	j_trace_leave("smd_update");
 
 	return ret;
 }
 
 gboolean 
-j_backend_smd_delete (JBackend* backend, gchar const* namespace,gchar const* key, bson_t const* node)
+j_backend_smd_delete (JBackend* backend, gchar const* namespace,gchar const* key)
 {
 	gboolean ret;
 
@@ -661,10 +661,9 @@ j_backend_smd_delete (JBackend* backend, gchar const* namespace,gchar const* key
 	g_return_val_if_fail(backend->type == J_BACKEND_TYPE_SMD, FALSE);
 	g_return_val_if_fail(namespace != NULL, FALSE);
 	g_return_val_if_fail(key != NULL, FALSE);
-	g_return_val_if_fail(node != NULL, FALSE);
 
 	j_trace_enter("smd_delete","%s", namespace);
-	ret = backend->smd.backend_insert(namespace,key,node);
+	ret = backend->smd.backend_delete(namespace,key);
 	j_trace_leave("smd_delete");
 
 	return ret;
@@ -682,7 +681,7 @@ j_backend_smd_get (JBackend* backend, gchar const* namespace,gchar const* key, b
 	g_return_val_if_fail(node != NULL, FALSE);
 
 	j_trace_enter("smd_get","%s", namespace);
-	ret = backend->smd.backend_insert(namespace,key,node);
+	ret = backend->smd.backend_get(namespace,key,node);
 	j_trace_leave("smd_get");
 
 	return ret;
