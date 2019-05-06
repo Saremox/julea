@@ -118,11 +118,6 @@ generate_create_table_stmt(gchar const* namespace, bson_t const* scheme)
 										"\n `%s` REAL NOT NULL",
 										bson_iter_key(&iter));
 				break;
-			case JSMD_TYPE_DATE:
-				g_string_append_printf(create_querry,
-										"\n `%s` DATE NOT NULL",
-										bson_iter_key(&iter));
-				break;
 			case JSMD_TYPE_DATE_TIME:
 				g_string_append_printf(create_querry,
 										"\n `%s` DATETIME NOT NULL",
@@ -477,8 +472,7 @@ backend_insert (gchar const* namespace, gchar const* key, bson_t const* node)
 				bson_iter_binary(&iter_node, NULL, &bytes, &blob);
 				sqlite3_bind_blob(insert_stmt, insert_index, &blob , bytes , NULL);
 				break;
-			case JSMD_TYPE_DATE_TIME: __attribute__ ((fallthrough));
-			case JSMD_TYPE_DATE: 
+			case JSMD_TYPE_DATE_TIME:
 				if( bson_iter_type(&iter_node) != BSON_TYPE_INT64)
 				{
 					// Wrong type in node
@@ -591,7 +585,6 @@ backend_get (gchar const* namespace, gchar const* key, bson_t* node)
 						case JSMD_TYPE_UNSIGNED_INTEGER_8:
 							bson_append_int32(node,c_name,strlen(c_name),(int32_t) sqlite3_column_int64(get_stmt,i));
 							break;
-						case JSMD_TYPE_DATE:
 						case JSMD_TYPE_DATE_TIME:
 							bson_append_int64(node,c_name,strlen(c_name),(int64_t) sqlite3_column_int64(get_stmt,i));
 							break;

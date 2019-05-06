@@ -131,7 +131,6 @@ bool j_smd_scheme_field_add(JSMD_Scheme* scheme, const gchar* field_name, JSMD_T
 		case JSMD_TYPE_FLOAT_16:
 		case JSMD_TYPE_FLOAT_32:
 		case JSMD_TYPE_FLOAT_64:
-		case JSMD_TYPE_DATE:
 		case JSMD_TYPE_DATE_TIME:
 		case JSMD_TYPE_INTEGER_128:
 		case JSMD_TYPE_UNSIGNED_INTEGER:
@@ -345,7 +344,7 @@ static gboolean _j_smd_scheme_get_exec(JList* operations, JSemantics* semantics)
 			guint32 server_index = j_helper_hash(scheme->namespace) % smd_server_cnt;
 			
 			bson_payload_length = j_message_get_4(reply[server_index]);
-			if(bson_payload_length >= 0)
+			if(bson_payload_length > 0)
 			{
 				bson_payload = j_message_get_n(reply[server_index],bson_payload_length);
 				bson_init_static(&bson_data,bson_payload,bson_payload_length);

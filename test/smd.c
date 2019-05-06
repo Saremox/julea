@@ -42,7 +42,6 @@ test_smd_scheme_apply(void)
   g_assert(j_smd_scheme_field_add(scheme,"name",JSMD_TYPE_TEXT));
   g_assert(j_smd_scheme_field_add(scheme,"loc",JSMD_TYPE_INTEGER));
   g_assert(j_smd_scheme_field_add(scheme,"coverage",JSMD_TYPE_FLOAT));
-  g_assert(j_smd_scheme_field_add(scheme,"birthday",JSMD_TYPE_DATE));
   g_assert(j_smd_scheme_field_add(scheme,"lastrun",JSMD_TYPE_DATE_TIME));
 
   j_smd_scheme_apply(scheme,batch);
@@ -68,7 +67,6 @@ test_smd_scheme_get(void)
   g_assert_cmpint(JSMD_TYPE_TEXT, ==, j_smd_scheme_field_get(scheme,"name"));
   g_assert_cmpint(JSMD_TYPE_INTEGER, ==, j_smd_scheme_field_get(scheme,"loc"));
   g_assert_cmpint(JSMD_TYPE_FLOAT, ==, j_smd_scheme_field_get(scheme,"coverage"));
-  g_assert_cmpint(JSMD_TYPE_DATE, ==, j_smd_scheme_field_get(scheme,"birthday"));
   g_assert_cmpint(JSMD_TYPE_DATE_TIME, ==, j_smd_scheme_field_get(scheme,"lastrun"));
 }
 
