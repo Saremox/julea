@@ -71,6 +71,8 @@ JSMD_Scheme* j_smd_scheme_new(const gchar* namespace)
 
   scheme->namespace = g_strdup(namespace);
 
+	scheme->ref_count = 1;
+
 	bson_init(&scheme->tree);
 
   j_trace_leave(G_STRFUNC);
@@ -389,7 +391,7 @@ void j_smd_scheme_apply(JSMD_Scheme* scheme, JBatch* batch)
 
 	op = j_operation_new();
 	op->data = j_smd_scheme_ref(scheme);
-	op->key = scheme->namespace;
+	op->key = strdup(scheme->namespace);
 	op->exec_func = _j_smd_scheme_apply_exec;
 	op->free_func = _j_smd_scheme_apply_free;
 
@@ -408,7 +410,7 @@ void j_smd_scheme_get(JSMD_Scheme* scheme, JBatch* batch)
 
 	op = j_operation_new();
 	op->data = j_smd_scheme_ref(scheme);
-	op->key = scheme->namespace;
+	op->key = strdup(scheme->namespace);
 	op->exec_func = _j_smd_scheme_get_exec;
 	op->free_func = _j_smd_scheme_get_free;
 
