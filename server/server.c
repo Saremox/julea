@@ -118,6 +118,7 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 		JSemanticsSafety safety;
 		guint i;
 
+		J_DEBUG("Recv Message %d",j_message_get_type(message))
 		operation_count = j_message_get_count(message);
 		type_modifier = j_message_get_flags(message);
 		safety = jd_safety_message_to_semantics(type_modifier);
@@ -663,30 +664,113 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 				break;
 			case J_MESSAGE_SMD_INSERT:
 				{
+					uint8_t* bson_payload;
+					bson_t bson_data;
+					gsize bson_payload_length;
 					g_autoptr(JMessage) reply = NULL;
-					reply = j_message_new_reply(message);
-					namespace = j_message_get_string(message);
+
+					if (type_modifier & J_MESSAGE_FLAGS_SAFETY_NETWORK)
+					{
+						reply = j_message_new_reply(message);
+					}
+
+					for (i = 0; i < operation_count; i++)
+					{
+						namespace = j_message_get_string(message);
+						key = j_message_get_string(message);
+						bson_payload_length = j_message_get_4(message);
+						bson_payload = j_message_get_n(message,bson_payload_length);
+						bson_init_static(&bson_data,bson_payload,bson_payload_length);
+						if(j_backend_smd_insert(jd_smd_backend,namespace,key,&bson_data) && reply != NULL)
+						{
+							j_message_add_operation(reply,strlen(namespace)+1);
+							j_message_append_n(reply,namespace,strlen(namespace)+1);
+						}
+					}
+					if (reply != NULL)
+					{
+						j_message_send(reply, connection);
+					}
 				}
 				break;
 			case J_MESSAGE_SMD_UPDATE:
 				{
+					uint8_t* bson_payload;
+					bson_t bson_data;
+					gsize bson_payload_length;
 					g_autoptr(JMessage) reply = NULL;
-					reply = j_message_new_reply(message);
-					namespace = j_message_get_string(message);
+
+					if (type_modifier & J_MESSAGE_FLAGS_SAFETY_NETWORK)
+					{
+						reply = j_message_new_reply(message);
+					}
+
+					for (i = 0; i < operation_count; i++)
+					{
+						namespace = j_message_get_string(message);
+						key = j_message_get_string(message);
+						bson_payload_length = j_message_get_4(message);
+						bson_payload = j_message_get_n(message,bson_payload_length);
+						bson_init_static(&bson_data,bson_payload,bson_payload_length);
+						if(j_backend_smd_update(jd_smd_backend,namespace,key,&bson_data) && reply != NULL)
+						{
+							j_message_add_operation(reply,strlen(namespace)+1);
+							j_message_append_n(reply,namespace,strlen(namespace)+1);
+						}
+					}
+					if (reply != NULL)
+					{
+						j_message_send(reply, connection);
+					}
 				}
 				break;
 			case J_MESSAGE_SMD_GET:
 				{
+					bson_t bson_data;
 					g_autoptr(JMessage) reply = NULL;
 					reply = j_message_new_reply(message);
-					namespace = j_message_get_string(message);
+					
+					for (i = 0; i < operation_count; i++)
+					{
+						bson_init(&bson_data);
+
+						namespace = j_message_get_string(message);
+						key = j_message_get_string(message);
+						if(!j_backend_smd_get(jd_smd_backend,namespace,key,&bson_data))
+						{
+							J_WARNING("Failed to retrieve item for %s in %s",key,namespace)
+						}
+						j_message_add_operation(reply, 4 + bson_data.len);
+						j_message_append_4(reply,&bson_data.len);
+						j_message_append_n(reply,bson_get_data(&bson_data),bson_data.len);
+						bson_destroy(&bson_data);
+					}
+					j_message_send(reply,connection);
 				}
 				break;
 			case J_MESSAGE_SMD_DELETE:
 				{
 					g_autoptr(JMessage) reply = NULL;
-					reply = j_message_new_reply(message);
-					namespace = j_message_get_string(message);
+
+					if (type_modifier & J_MESSAGE_FLAGS_SAFETY_NETWORK)
+					{
+						reply = j_message_new_reply(message);
+					}
+
+					for (i = 0; i < operation_count; i++)
+					{
+						namespace = j_message_get_string(message);
+						key = j_message_get_string(message);
+						if(j_backend_smd_delete(jd_smd_backend,namespace,key) && reply != NULL)
+						{
+							j_message_add_operation(reply,strlen(namespace)+1);
+							j_message_append_n(reply,namespace,strlen(namespace)+1);
+						}
+					}
+					if (reply != NULL)
+					{
+						j_message_send(reply, connection);
+					}
 				}
 				break;
 			case J_MESSAGE_SMD_SEARCH:
@@ -694,6 +778,7 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 					g_autoptr(JMessage) reply = NULL;
 					reply = j_message_new_reply(message);
 					namespace = j_message_get_string(message);
+					// TODO
 				}
 				break;
 			case J_MESSAGE_SMD_SEARCH_NAMESPACE:
@@ -701,6 +786,7 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 					g_autoptr(JMessage) reply = NULL;
 					reply = j_message_new_reply(message);
 					namespace = j_message_get_string(message);
+					// TODO
 				}
 				break;
 			default:
