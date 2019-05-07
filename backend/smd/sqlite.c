@@ -33,6 +33,8 @@
 #include <julea-internal.h>
 #include <julea-smd.h>
 
+static sqlite3* backend_db = NULL;
+
 // Temporary until Julea provides helper header files
 // for this.
 static
@@ -41,12 +43,56 @@ void _sqlite3_finalize(void * ptr)
 	sqlite3_finalize((sqlite3_stmt*)ptr);
 }
 
+static
+void _bson_destroy(void * ptr)
+{
+	bson_destroy(ptr);
+	g_slice_free(bson_t,ptr);
+}
+
+typedef gint SMD_TRANSACTION;
+
+static
+void _transaction_begin(SMD_TRANSACTION* ptr)
+{
+	*ptr = 1;
+	if (sqlite3_exec(backend_db, "BEGIN TRANSACTION;", NULL, NULL, NULL) != SQLITE_OK)
+	{
+		J_CRITICAL("cannot begin transaction: %s",sqlite3_errmsg(backend_db))
+	}
+}
+
+static
+void _transaction_end(SMD_TRANSACTION* ptr)
+{
+	if(*ptr == 1)
+	{
+		*ptr = 0;
+		if (sqlite3_exec(backend_db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK)
+		{
+			J_CRITICAL("cannot end transaction: %s",sqlite3_errmsg(backend_db))
+		}
+	}
+}
+
+static
+void _transaction_abort(SMD_TRANSACTION* ptr)
+{
+	if(*ptr == 1)
+	{
+		*ptr = 0;
+		if (sqlite3_exec(backend_db, "ROLLBACK;", NULL, NULL, NULL) != SQLITE_OK)
+		{
+			J_CRITICAL("cannot end transaction: %s",sqlite3_errmsg(backend_db))
+		}
+	}
+}
+
 #define UN_CONSTIFY(_t, _v) ((_t)(uintptr_t)(_v)) 
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(bson_t, bson_destroy)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(bson_t, _bson_destroy)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC(sqlite3_stmt,_sqlite3_finalize)
-
-static sqlite3* backend_db = NULL;
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(SMD_TRANSACTION,_transaction_abort)
 
 /*
  * Helper Functions
@@ -55,17 +101,7 @@ static
 int64_t 
 smd_get_type(bson_iter_t* iter)
 {
-	int64_t jsmd_type = JSMD_TYPE_INVALID_BSON;
-	if(bson_iter_type(iter) == BSON_TYPE_UTF8)
-	{
-		g_autofree const gchar* elem = bson_iter_utf8(iter, NULL);
-		jsmd_type = j_smd_type_string2type(elem);
-	}
-	else if (bson_iter_type(iter) == BSON_TYPE_INT64)
-	{
-		jsmd_type = bson_iter_int64(iter);
-	}
-	return jsmd_type;
+	return bson_iter_int64(iter);
 }
 
 static
@@ -173,9 +209,9 @@ gchar*
 generate_insert_table_stmt(gchar const* namespace, bson_t const* node)
 {
 	bson_iter_t iter_node;
-	g_autoptr(GString) insert_querry = g_string_new(NULL);
-	g_autoptr(GString) insert_querry_placeholder = g_string_new("?");
-	g_string_append_printf(insert_querry, "INSERT INTO `%s` (`key`",namespace);
+	GString* insert_querry = g_string_new(NULL);
+	GString* insert_querry_placeholder = g_string_new("?,");
+	g_string_append_printf(insert_querry, "INSERT INTO `%s` (`key`,",namespace);
 
 	if(!bson_iter_init(&iter_node,node))
 	{
@@ -185,8 +221,8 @@ generate_insert_table_stmt(gchar const* namespace, bson_t const* node)
 	bson_iter_next(&iter_node);
 	while(true)
 	{
-		g_string_append_printf(insert_querry, "%s", bson_iter_key(&iter_node));
-		g_string_append(insert_querry,"?");
+		g_string_append_printf(insert_querry, "`%s`", bson_iter_key(&iter_node));
+		g_string_append(insert_querry_placeholder,"?");
 		if(bson_iter_next(&iter_node))
 		{
 			g_string_append(insert_querry,",");
@@ -195,8 +231,8 @@ generate_insert_table_stmt(gchar const* namespace, bson_t const* node)
 		}
 		else
 		{
-			g_string_append_printf(insert_querry,") VALUES (%s);",(gchar*) insert_querry_placeholder);
-			g_string_free(insert_querry_placeholder,true);
+			g_autofree gchar* placeholder= g_string_free(insert_querry_placeholder,false);
+			g_string_append_printf(insert_querry,") VALUES (%s);",placeholder);
 			break;
 		}
 	}
@@ -210,9 +246,9 @@ generate_update_table_stmt(gchar const* namespace, bson_t const* node)
 {
 	bson_iter_t iter_node;
 	GString* update_querry;
-	g_autoptr(GString) column_names = g_string_new(NULL);
-	g_autoptr(GString) sql_bind = g_string_new(NULL);
-	g_autoptr(GString) upsert = g_string_new(NULL);
+	GString* column_names = g_string_new(NULL);
+	GString* sql_bind = g_string_new(NULL);
+	GString* upsert = g_string_new(NULL);
 
 	if(!bson_iter_init(&iter_node,node))
 	{
@@ -228,17 +264,20 @@ generate_update_table_stmt(gchar const* namespace, bson_t const* node)
 		g_string_append_printf(upsert,"`%s` = ?",column_name);
 		if(!bson_iter_next(&iter_node))
 		{
-			break;
+			g_autofree gchar* cname = g_string_free(column_names,false);
+			g_autofree gchar* sbind = g_string_free(sql_bind,false);
+			g_autofree gchar* usert = g_string_free(upsert,false);
+			update_querry = g_string_new(NULL);
+			g_string_append_printf(update_querry,"INSERT INTO `%s` (`key`,%s) VALUES (?, %s) ON CONFLICT(key) DO UPDATE SET %s;", namespace, cname, sbind, usert);
+			
+			return g_string_free(update_querry,false);
 		}
 		g_string_append(column_names,",");
 		g_string_append(sql_bind,",");
 		g_string_append(upsert,",");
 	}
 
-	update_querry = g_string_new(NULL);
-	g_string_append_printf(update_querry,"INSERT INTO `%s` (`key`,%s) VALUES (?, %s) ON CONFLICT(key) DO UPDATE SET %s;", namespace, (gchar*) column_names, (gchar*) sql_bind, (gchar*) upsert);
 	
-	return g_string_free(update_querry,false);
 }
 
 static 
@@ -250,6 +289,17 @@ create_get_stmt(gchar const* namespace, gchar const* key)
 	g_string_append_printf(get_querry,"SELECT * FROM `%s` WHERE `key` = '%s'", namespace, key);
 	return g_string_free(get_querry,FALSE);
 }
+
+static 
+gchar*
+create_delete_stmt(gchar const* namespace, gchar const* key)
+{
+	GString* get_querry = g_string_new(NULL);
+
+	g_string_append_printf(get_querry,"DELETE FROM `%s` WHERE `key` = '%s'", namespace, key);
+	return g_string_free(get_querry,FALSE);
+}
+
 
 /* 
  * SMD API
@@ -306,15 +356,13 @@ backend_apply_scheme (gchar const* namespace, bson_t const* scheme)
 {
 	g_autofree gchar* create_querry = NULL;
 	g_autoptr(sqlite3_stmt) insert_scheme_cache = NULL;
+	SMD_TRANSACTION t = 0;
+	g_autoptr(SMD_TRANSACTION) transaction = &t;
 
 	g_return_val_if_fail(namespace != NULL, FALSE);
 	g_return_val_if_fail(scheme != NULL, FALSE);
 
-	if (sqlite3_exec(backend_db, "BEGIN TRANSACTION;", NULL, NULL, NULL) != SQLITE_OK)
-	{
-		J_CRITICAL("cannot begin transaction: %s",sqlite3_errmsg(backend_db))
-		return FALSE;
-	}
+	_transaction_begin(transaction);
 
 	// Create SQL Create Table statement from json document
 	create_querry = generate_create_table_stmt(namespace,scheme);
@@ -354,11 +402,7 @@ backend_apply_scheme (gchar const* namespace, bson_t const* scheme)
 		return FALSE;
 	}
 
-	if (sqlite3_exec(backend_db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK)
-	{
-		J_CRITICAL("cannot end transaction: %s",sqlite3_errmsg(backend_db))
-		return FALSE;
-	}
+	_transaction_end(transaction);
 
 	return TRUE;
 }
@@ -414,14 +458,14 @@ gboolean
 _backend_insert (gchar const* namespace, gchar const* key, bson_t const* node, gboolean allow_update)
 {
 	g_autoptr(sqlite3_stmt) insert_stmt = NULL;
-	g_autoptr(bson_t) insert_scheme = NULL;
+	bson_t insert_scheme;
 	bson_iter_t iter_node;
 	bson_iter_t iter_scheme;
 	g_autofree gchar* insert_querry = NULL;
 	int64_t insert_index;
 	int64_t num_keys_scheme;
 
-	if(!backend_get_scheme(namespace, insert_scheme))
+	if(!backend_get_scheme(namespace, &insert_scheme))
 	{
 		J_WARNING("There is no scheme for this namespace %s",namespace);
 		return FALSE;
@@ -429,11 +473,11 @@ _backend_insert (gchar const* namespace, gchar const* key, bson_t const* node, g
 
 	if(allow_update)
 	{
-		insert_querry = generate_update_table_stmt(namespace,node);
+		insert_querry = generate_update_table_stmt(namespace,&insert_scheme);
 	}
 	else
 	{
-		insert_querry = generate_insert_table_stmt(namespace,node);
+		insert_querry = generate_insert_table_stmt(namespace,&insert_scheme);
 	}
 	
 	if(insert_querry != NULL)
@@ -445,28 +489,26 @@ _backend_insert (gchar const* namespace, gchar const* key, bson_t const* node, g
 		}
 	}
 	
-	if(!(bson_iter_init(&iter_node,node) && bson_iter_init(&iter_scheme,insert_scheme)))
+	if(!bson_iter_init(&iter_scheme,&insert_scheme))
 	{
-		J_CRITICAL("Failed to initialize bson iterator for tree 0x%p", UN_CONSTIFY(gpointer,node));
+		J_CRITICAL("Failed to initialize bson iterator for node tree 0x%p", UN_CONSTIFY(gpointer,node));
 		return FALSE;
 	}
 	insert_index = 2;
 	sqlite3_bind_text(insert_stmt, 1, key,-1,NULL);
-	bson_iter_next(&iter_node);
-	num_keys_scheme = bson_count_keys(insert_scheme);
-	while(true)
+	num_keys_scheme = bson_count_keys(&insert_scheme);
+	J_WARNING("%s",bson_as_json(node,NULL));
+	while(bson_iter_next(&iter_scheme))
 	{
 		JSMD_TYPE jsmd_type;
 		uint32_t bytes = 0; // Size of binary data;
 		const uint8_t* blob;
-		const gchar* cur_key = bson_iter_key(&iter_node);
-		jsmd_type = smd_get_type(&iter_scheme);
-		if(! bson_iter_find(&iter_scheme,cur_key) )
+		const gchar* cur_key = bson_iter_key(&iter_scheme);
+		if(!bson_iter_init_find(&iter_node,node,cur_key))
 		{
-			J_WARNING("Namespace %s does not have column %s of type %s",namespace,cur_key,j_smd_type_type2string(jsmd_type))
-			return false;
+			continue;
 		}
-
+		jsmd_type = smd_get_type(&iter_scheme);
 		switch(jsmd_type)
 		{
 			case JSMD_TYPE_INTEGER: __attribute__ ((fallthrough));
@@ -479,7 +521,7 @@ _backend_insert (gchar const* namespace, gchar const* key, bson_t const* node, g
 			case JSMD_TYPE_UNSIGNED_INTEGER_32:
 				if( bson_iter_type(&iter_node) != BSON_TYPE_INT64)
 				{
-					J_WARNING("The Type in bson_tree 0x%p in column %s is not %s", UN_CONSTIFY(gpointer,node),cur_key,j_smd_type_type2string(jsmd_type))
+					J_INFO("The Type in bson_tree 0x%p in column %s is not %s", UN_CONSTIFY(gpointer,node),cur_key,j_smd_type_type2string(jsmd_type))
 					return false;
 				}
 				sqlite3_bind_int64(insert_stmt, insert_index, bson_iter_as_int64(&iter_node));
@@ -488,10 +530,11 @@ _backend_insert (gchar const* namespace, gchar const* key, bson_t const* node, g
 					sqlite3_bind_int64(insert_stmt, insert_index + num_keys_scheme, bson_iter_as_int64(&iter_node));
 				}
 				break;
+			case JSMD_TYPE_DATE_TIME: __attribute__ ((fallthrough));
 			case JSMD_TYPE_TEXT:
 				if( bson_iter_type(&iter_node) != BSON_TYPE_UTF8)
 				{
-					J_WARNING("The Type in bson_tree 0x%p in column %s is not %s", UN_CONSTIFY(gpointer,node),cur_key,j_smd_type_type2string(jsmd_type))
+					J_INFO("The Type in bson_tree 0x%p in column %s is not %s", UN_CONSTIFY(gpointer,node),cur_key,j_smd_type_type2string(jsmd_type))
 					return false;
 				}
 				sqlite3_bind_text(insert_stmt, insert_index, bson_iter_utf8(&iter_node,NULL),-1,NULL);
@@ -506,7 +549,7 @@ _backend_insert (gchar const* namespace, gchar const* key, bson_t const* node, g
 			case JSMD_TYPE_FLOAT_64:
 				if( bson_iter_type(&iter_node) != BSON_TYPE_DOUBLE)
 				{
-					J_WARNING("The Type in bson_tree 0x%p in column %s is not %s", UN_CONSTIFY(gpointer,node),cur_key,j_smd_type_type2string(jsmd_type))
+					J_INFO("The Type in bson_tree 0x%p in column %s is not %s", UN_CONSTIFY(gpointer,node),cur_key,j_smd_type_type2string(jsmd_type))
 					return false;
 				}
 				sqlite3_bind_double(insert_stmt, insert_index, bson_iter_as_double(&iter_node));
@@ -526,7 +569,7 @@ _backend_insert (gchar const* namespace, gchar const* key, bson_t const* node, g
 				bytes += 8; // Size of 64 Bit unsigned integer
 				if( bson_iter_type(&iter_node) != BSON_TYPE_BINARY)
 				{
-					J_WARNING("The Type in bson_tree 0x%p in column %s is not %s", UN_CONSTIFY(gpointer,node),cur_key,j_smd_type_type2string(jsmd_type))
+					J_INFO("The Type in bson_tree 0x%p in column %s is not %s", UN_CONSTIFY(gpointer,node),cur_key,j_smd_type_type2string(jsmd_type))
 					return false;
 				}
 				
@@ -537,29 +580,19 @@ _backend_insert (gchar const* namespace, gchar const* key, bson_t const* node, g
 					sqlite3_bind_blob(insert_stmt, insert_index + num_keys_scheme, &blob , bytes , NULL);
 				}
 				break;
-			case JSMD_TYPE_DATE_TIME:
-				if( bson_iter_type(&iter_node) != BSON_TYPE_INT64)
-				{
-					J_WARNING("The Type in bson_tree 0x%p in column %s is not %s", UN_CONSTIFY(gpointer,node),cur_key,j_smd_type_type2string(jsmd_type))
-					return false;
-				}
-				sqlite3_bind_int64(insert_stmt, insert_index, bson_iter_int64(&iter_node));
-				break;
 			case JSMD_TYPE_UNKNOWN:
 			case JSMD_TYPE_INVALID_BSON:
 			default:
-				J_WARNING("Invalid type in Namespace scheme %s for column %s",namespace,cur_key)
+				J_INFO("Invalid type in Namespace scheme %s for column %s",namespace,cur_key)
 				return false;
 		}
-		if(bson_iter_next(&iter_node))
-		{
-			insert_index++;
-			continue;
-		}
-		else
-		{
-			break;
-		}	
+		insert_index++;
+	}
+
+	if(sqlite3_step(insert_stmt) != SQLITE_DONE)
+	{
+		J_WARNING("%s > %s",sqlite3_expanded_sql(insert_stmt),sqlite3_errmsg(backend_db));
+		return FALSE;
 	}
 
 	return true;
@@ -591,8 +624,25 @@ static
 gboolean 
 backend_delete (gchar const* namespace, gchar const* key)
 {
+	g_autofree gchar* delete_querry = create_delete_stmt(namespace,key);
+	g_autoptr(sqlite3_stmt) delete_stmt = NULL;
 	g_return_val_if_fail(namespace != NULL, FALSE);
 	g_return_val_if_fail(key != NULL, FALSE);
+
+	if(delete_querry != NULL)
+	{
+	if( sqlite3_prepare_v2(backend_db, delete_querry, -1, &delete_stmt, NULL) != SQLITE_OK)
+		{
+			J_CRITICAL("Failed to prepare insert statement \"%s\" : %s",delete_querry,sqlite3_errmsg(backend_db));
+			return FALSE;
+		}
+	}
+
+	if(sqlite3_step(delete_stmt) != SQLITE_DONE)
+	{
+		J_WARNING("%s > %s",sqlite3_expanded_sql(delete_stmt),sqlite3_errmsg(backend_db));
+		return FALSE;
+	}
 
 	return TRUE;
 }
@@ -633,11 +683,15 @@ backend_get (gchar const* namespace, gchar const* key, bson_t* node)
 			uint8_t const* blob;
 			gchar const* value;
 			gchar const* c_name = sqlite3_column_name(get_stmt,i);
-			if(g_strcmp0(c_name,"key"))
+			if(g_strcmp0(c_name,"key") == 0)
 			{
 				continue;
 			}
-			bson_iter_find(&namespace_scheme_iter,c_name);
+			if(!bson_iter_find(&namespace_scheme_iter,c_name))
+			{
+				J_WARNING("scheme of namespace %s does not have a column %s",namespace,c_name);
+				return FALSE;
+			}
 
 			switch (sqlite3_column_type(get_stmt,i))
 			{
@@ -646,7 +700,8 @@ backend_get (gchar const* namespace, gchar const* key, bson_t* node)
 					{
 						case JSMD_TYPE_INTEGER: __attribute__ ((fallthrough));
 						case JSMD_TYPE_INTEGER_64:
-							bson_append_int64(node,c_name,strlen(c_name),sqlite3_column_int64(get_stmt,i));
+
+							bson_append_int64(node,c_name,-1,sqlite3_column_int64(get_stmt,i));
 							break;
 						case JSMD_TYPE_INTEGER_32: __attribute__ ((fallthrough));
 						case JSMD_TYPE_UNSIGNED_INTEGER_32: __attribute__ ((fallthrough));
@@ -654,10 +709,7 @@ backend_get (gchar const* namespace, gchar const* key, bson_t* node)
 						case JSMD_TYPE_UNSIGNED_INTEGER_16: __attribute__ ((fallthrough));
 						case JSMD_TYPE_INTEGER_8: __attribute__ ((fallthrough));
 						case JSMD_TYPE_UNSIGNED_INTEGER_8:
-							bson_append_int32(node,c_name,strlen(c_name),(int32_t) sqlite3_column_int64(get_stmt,i));
-							break;
-						case JSMD_TYPE_DATE_TIME:
-							bson_append_int64(node,c_name,strlen(c_name),(int64_t) sqlite3_column_int64(get_stmt,i));
+							bson_append_int32(node,c_name,-1,(int32_t) sqlite3_column_int64(get_stmt,i));
 							break;
 						default:
 							g_error("SQLite Result and namespace scheme definition inconsistent.");
@@ -671,7 +723,7 @@ backend_get (gchar const* namespace, gchar const* key, bson_t* node)
 						case JSMD_TYPE_FLOAT_16: __attribute__ ((fallthrough));
 						case JSMD_TYPE_FLOAT_32: __attribute__ ((fallthrough));
 						case JSMD_TYPE_FLOAT_64:
-							bson_append_double(node,c_name,strlen(c_name),sqlite3_column_double(get_stmt,i));
+							bson_append_double(node,c_name,-1,sqlite3_column_double(get_stmt,i));
 							break;
 						default:
 							g_error("SQLite Result and namespace scheme definition inconsistent.");
@@ -681,9 +733,17 @@ backend_get (gchar const* namespace, gchar const* key, bson_t* node)
 				case SQLITE3_TEXT:
 					switch(smd_get_type(&namespace_scheme_iter))
 					{
+						case JSMD_TYPE_DATE_TIME: __attribute__ ((fallthrough));
 						case JSMD_TYPE_TEXT:
-							value = sqlite3_column_blob(get_stmt,i);
-							bson_append_utf8(node,c_name,strlen(c_name),value,strlen(value));
+							value = (const gchar*) sqlite3_column_text(get_stmt,i);
+							if(value != NULL)
+							{
+								bson_append_utf8(node,c_name,-1,value,-1);
+							}
+							else
+							{
+								J_WARNING("Namespace %s for key %s on column %s returned NULL",namespace,key,c_name);
+							}
 							break;
 						default:
 							g_error("SQLite Result and namespace scheme definition inconsistent.");
@@ -710,7 +770,7 @@ backend_get (gchar const* namespace, gchar const* key, bson_t* node)
 							}
 
 							blob = sqlite3_column_blob(get_stmt,i);
-							bson_append_binary(node,c_name,strlen(c_name),BSON_SUBTYPE_BINARY,blob,length);
+							bson_append_binary(node,c_name,-1,BSON_SUBTYPE_BINARY,blob,length);
 							break;
 						default:
 							g_error("SQLite Result and namespace scheme definition inconsistent.");
