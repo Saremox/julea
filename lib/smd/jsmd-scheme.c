@@ -118,6 +118,14 @@ bool j_smd_scheme_field_add(JSMD_Scheme* scheme, const gchar* field_name, JSMD_T
 
 	j_trace_enter(G_STRFUNC, NULL);
 
+	if(bson_has_field(&scheme->tree,field_name))
+  {
+    bson_t tmp = BSON_INITIALIZER;
+    bson_copy_to_excluding_noinit(&scheme->tree,&tmp,field_name,NULL);
+    bson_destroy(&scheme->tree);
+    bson_steal(&scheme->tree,&tmp);
+  }
+
 	switch (type)
 	{
 		case JSMD_TYPE_INTEGER_8:
