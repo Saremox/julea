@@ -23,6 +23,9 @@
 #ifndef JULEA_SMD_H
 #define JULEA_SMD_H
 
+#include <smd/jsmd-type.h>
 #include <smd/jsmd.h>
+#include <smd/jsmd-scheme.h>
+#include <smd/jsmd-search.h>
 
 #endif

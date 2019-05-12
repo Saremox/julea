@@ -32,7 +32,6 @@
 #include <julea.h>
 #include <smd/jsmd-type.h>
 #include <smd/jsmd-scheme.h>
-#include <smd/jsmd-search.h>
 
 
 G_BEGIN_DECLS
