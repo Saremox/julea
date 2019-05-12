@@ -454,6 +454,43 @@ backend_get_scheme (gchar const* namespace, bson_t* scheme)
 }
 
 static
+gboolean 
+backend_delete_scheme (gchar const* namespace, bson_t* scheme)
+{
+	g_autoptr(sqlite3_stmt) stmt = NULL;
+	SMD_TRANSACTION t = 0;
+	g_autoptr(SMD_TRANSACTION) transaction = &t;
+
+	g_return_val_if_fail(namespace != NULL, FALSE);
+	g_return_val_if_fail(scheme != NULL, FALSE);
+
+	_transaction_begin(transaction);
+
+	if(sqlite3_prepare_v2(backend_db, "DELETE FROM _julea_structure_ WHERE namespace = ?;", -1, &stmt, NULL) != SQLITE_OK)
+	{
+		J_CRITICAL("Failed to prepare delete scheme stmt for namespace %s : %s", namespace, sqlite3_errmsg(backend_db));
+	}
+	sqlite3_bind_text(stmt, 1, namespace, -1, NULL);
+
+	if (sqlite3_step(stmt) == SQLITE_DONE)
+	{
+		g_autofree gchar* statement = g_strdup_printf("DROP TABLE `%s`;",namespace);
+		if(sqlite3_exec(backend_db, statement, NULL, NULL, NULL) != SQLITE_OK)
+		{
+			J_CRITICAL("Failed to drop table for namespace %s : %s", namespace, sqlite3_errmsg(backend_db));
+			return FALSE;
+		}	
+		_transaction_end(transaction);
+		return TRUE;
+	}
+	else
+	{
+		J_INFO("Namespace %s not found",namespace);
+		return FALSE;
+	}
+}
+
+static
 gboolean
 _backend_insert (gchar const* namespace, gchar const* key, bson_t const* node, gboolean allow_update)
 {
@@ -800,17 +837,16 @@ backend_get (gchar const* namespace, gchar const* key, bson_t* node)
 
 static
 gboolean 
-backend_search (bson_t* args, gpointer* result_pointer)
+backend_get_all_namespaces (bson_t* result)
 {
-	g_return_val_if_fail(args != NULL, FALSE);
-	g_return_val_if_fail(result_pointer != NULL, FALSE);
+	g_return_val_if_fail(result != NULL, FALSE);
 
 	return TRUE;
 }
 
 static
 gboolean 
-backend_search_namespace (bson_t* args, gpointer* result_pointer,gchar const* namespace)
+backend_search (bson_t* args, gpointer* result_pointer,gchar const* namespace)
 {
 	g_return_val_if_fail(args != NULL, FALSE);
 	g_return_val_if_fail(result_pointer != NULL, FALSE);
@@ -846,12 +882,13 @@ JBackend sqlite_backend = {
 		.backend_fini = backend_fini,
 		.backend_apply_scheme = backend_apply_scheme,
 		.backend_get_scheme = backend_get_scheme,
+		.backend_delete_scheme = backend_delete_scheme,
 		.backend_insert = backend_insert,
 		.backend_update = backend_update,
 		.backend_delete = backend_delete,
 		.backend_get = backend_get,
+		.backend_get_all_namespaces = backend_get_all_namespaces,
 		.backend_search = backend_search,
-		.backend_search_namespace = backend_search_namespace,
     .backend_iterate = backend_iterate,
     .backend_error = backend_error
 	}

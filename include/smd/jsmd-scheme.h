@@ -45,6 +45,7 @@ JSMD_TYPE j_smd_scheme_field_get(JSMD_Scheme*, const gchar*);
 
 void j_smd_scheme_apply(JSMD_Scheme*, JBatch*);
 void j_smd_scheme_get(JSMD_Scheme*, JBatch*);
+void j_smd_scheme_delete(JSMD_Scheme*, JBatch*);
 
 const gchar* j_smd_scheme_namespace(JSMD_Scheme*);
 

@@ -67,6 +67,16 @@ backend_get_scheme (gchar const* namespace, bson_t* scheme)
 
 static
 gboolean 
+backend_delete_scheme (gchar const* namespace, bson_t* scheme)
+{
+	g_return_val_if_fail(namespace != NULL, FALSE);
+	g_return_val_if_fail(scheme != NULL, FALSE);
+
+	return TRUE;
+}
+
+static
+gboolean 
 backend_insert (gchar const* namespace, gchar const* key, bson_t const* node)
 {
 	g_return_val_if_fail(namespace != NULL, FALSE);
@@ -110,17 +120,16 @@ backend_get (gchar const* namespace, gchar const* key, bson_t* node)
 
 static
 gboolean 
-backend_search (bson_t* args, gpointer* result_pointer)
+backend_get_all_namespaces (bson_t* result)
 {
-	g_return_val_if_fail(args != NULL, FALSE);
-	g_return_val_if_fail(result_pointer != NULL, FALSE);
+	g_return_val_if_fail(result != NULL, FALSE);
 
 	return TRUE;
 }
 
 static
 gboolean 
-backend_search_namespace (bson_t* args, gpointer* result_pointer,gchar const* namespace)
+backend_search (bson_t* args, gpointer* result_pointer,gchar const* namespace)
 {
 	g_return_val_if_fail(args != NULL, FALSE);
 	g_return_val_if_fail(result_pointer != NULL, FALSE);
@@ -157,12 +166,13 @@ JBackend null_backend = {
 		.backend_fini = backend_fini,
 		.backend_apply_scheme = backend_apply_scheme,
 		.backend_get_scheme = backend_get_scheme,
+		.backend_delete_scheme = backend_delete_scheme,
 		.backend_insert = backend_insert,
 		.backend_update = backend_update,
 		.backend_delete = backend_delete,
 		.backend_get = backend_get,
 		.backend_search = backend_search,
-		.backend_search_namespace = backend_search_namespace,
+		.backend_get_all_namespaces = backend_get_all_namespaces,
     .backend_iterate = backend_iterate,
     .backend_error = backend_error
 	}

@@ -662,6 +662,31 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 					j_message_send(reply,connection);
 				}
 				break;
+			case J_MESSAGE_SMD_SCHEMA_DELETE:
+				{
+					bson_t bson_data;
+					g_autoptr(JMessage) reply = NULL;
+
+					if (type_modifier & J_MESSAGE_FLAGS_SAFETY_NETWORK)
+					{
+						reply = j_message_new_reply(message);
+					}
+					
+					for (i = 0; i < operation_count; i++)
+					{
+						namespace = j_message_get_string(message);
+						if(j_backend_smd_delete_scheme(jd_smd_backend,namespace,&bson_data) && reply != NULL)
+						{
+							j_message_add_operation(reply,strlen(namespace)+1);
+							j_message_append_n(reply,namespace,strlen(namespace)+1);
+						}
+					}
+					if (type_modifier & J_MESSAGE_FLAGS_SAFETY_NETWORK)
+					{
+						j_message_send(reply,connection);
+					}
+				}
+				break;
 			case J_MESSAGE_SMD_INSERT:
 				{
 					uint8_t* bson_payload;
@@ -781,7 +806,7 @@ jd_on_run (GThreadedSocketService* service, GSocketConnection* connection, GObje
 					// TODO
 				}
 				break;
-			case J_MESSAGE_SMD_SEARCH_NAMESPACE:
+			case J_MESSAGE_SMD_GET_ALL_NAMESPACES:
 				{
 					g_autoptr(JMessage) reply = NULL;
 					reply = j_message_new_reply(message);

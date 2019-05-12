@@ -389,6 +389,97 @@ static void _j_smd_scheme_get_free(gpointer data)
 	j_trace_leave(G_STRFUNC);
 }
 
+static gboolean _j_smd_scheme_delete_exec(JList* operations, JSemantics* semantics)
+{
+	gboolean ret = TRUE;
+	JBackend* smd_backend;
+	g_autoptr(JListIterator) it = NULL;
+	JMessage** message = NULL;
+	JConfiguration* configuration = j_configuration();
+	guint32 smd_server_cnt = j_configuration_get_kv_server_count(configuration);
+
+	g_return_val_if_fail(operations != NULL, FALSE);
+	g_return_val_if_fail(semantics != NULL, FALSE);
+
+	it = j_list_iterator_new(operations);
+	smd_backend = j_smd_backend();
+
+	if (smd_backend == NULL)
+	{
+		message = g_malloc0_n(smd_server_cnt,sizeof(JMessage*));
+	}
+
+	j_trace_enter(G_STRFUNC, NULL);
+
+	while (j_list_iterator_next(it))
+	{
+		JSMD_Scheme* scheme = j_list_iterator_get(it);
+		
+		if (smd_backend == NULL)
+		{
+			gchar* namespace = scheme->namespace;
+			gsize namespace_len = strlen(namespace) + 1;
+			guint32 server_index = j_helper_hash(namespace) % smd_server_cnt;
+			
+			if(message[server_index] == NULL)
+			{
+				message[server_index] = j_message_new(J_MESSAGE_SMD_SCHEMA_DELETE,0);
+				j_message_set_safety(message[server_index], semantics);
+			}
+			j_message_add_operation(message[server_index], + namespace_len);
+			j_message_append_n(message[server_index],namespace,namespace_len);
+		}
+		else
+		{
+			if(smd_backend->smd.backend_apply_scheme(scheme->namespace,&scheme->tree))
+			{
+				ret = FALSE;
+			}
+		}	
+	}
+
+	if (smd_backend == NULL)
+	{
+		for(guint32 i = 0; i < smd_server_cnt ; i++)
+		{
+			if(message[i] != NULL)
+			{
+				GSocketConnection* smd_connection;
+
+				smd_connection = j_connection_pool_pop_smd(i);
+				j_message_send(message[i], smd_connection);
+
+				if (j_message_get_flags(message[i]) & J_MESSAGE_FLAGS_SAFETY_NETWORK)
+				{
+					g_autoptr(JMessage) reply = NULL;
+
+					reply = j_message_new_reply(message[i]);
+					j_message_receive(reply, smd_connection);
+
+					/* FIXME do something with reply */
+				}
+
+				j_connection_pool_push_smd(i, smd_connection);
+				j_message_unref(message[i]);
+			}
+		}
+		g_free(message);
+	}
+	j_trace_leave(G_STRFUNC);
+	return ret;
+}
+
+static void _j_smd_scheme_delete_free(gpointer data)
+{
+	g_return_if_fail(data != NULL);
+
+	j_trace_enter(G_STRFUNC, NULL);
+
+	j_smd_scheme_unref(data);
+
+	j_trace_leave(G_STRFUNC);
+}
+
 void j_smd_scheme_apply(JSMD_Scheme* scheme, JBatch* batch)
 {
 	JOperation* op;
@@ -421,6 +512,25 @@ void j_smd_scheme_get(JSMD_Scheme* scheme, JBatch* batch)
 	op->key = strdup(scheme->namespace);
 	op->exec_func = _j_smd_scheme_get_exec;
 	op->free_func = _j_smd_scheme_get_free;
+
+	j_batch_add(batch,op);
+
+	j_trace_leave(G_STRFUNC);
+}
+
+void j_smd_scheme_delete(JSMD_Scheme* scheme, JBatch* batch)
+{
+	JOperation* op;
+	g_return_if_fail(scheme != NULL);
+	g_return_if_fail(batch != NULL);
+
+	j_trace_enter(G_STRFUNC, NULL);
+
+	op = j_operation_new();
+	op->data = j_smd_scheme_ref(scheme);
+	op->key = strdup(scheme->namespace);
+	op->exec_func = _j_smd_scheme_delete_exec;
+	op->free_func = _j_smd_scheme_delete_free;
 
 	j_batch_add(batch,op);
 

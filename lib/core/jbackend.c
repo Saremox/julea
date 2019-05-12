@@ -158,6 +158,7 @@ j_backend_load (gchar const* name, JBackendComponent component, JBackendType typ
 				|| tmp_backend->smd.backend_insert == NULL
 				|| tmp_backend->smd.backend_update == NULL
 				|| tmp_backend->smd.backend_delete == NULL
+				|| tmp_backend->smd.backend_get_all_namespaces == NULL
 				|| tmp_backend->smd.backend_search == NULL
 				|| tmp_backend->smd.backend_iterate == NULL
 				|| tmp_backend->smd.backend_error == NULL)
@@ -616,6 +617,23 @@ j_backend_smd_get_scheme(JBackend* backend, const gchar* namespace, bson_t* sche
 	return ret;
 }
 
+gboolean
+j_backend_smd_delete_scheme(JBackend* backend, const gchar* namespace, bson_t* scheme)
+{
+	gboolean ret;
+
+	g_return_val_if_fail(backend != NULL, FALSE);
+	g_return_val_if_fail(backend->type == J_BACKEND_TYPE_SMD, FALSE);
+	g_return_val_if_fail(namespace != NULL, FALSE);
+	g_return_val_if_fail(scheme != NULL, FALSE);
+
+	j_trace_enter("smd_get_scheme","%s", namespace);
+	ret = backend->smd.backend_delete_scheme(namespace,scheme);
+	j_trace_leave("smd_get_scheme");
+
+	return ret;
+}
+
 gboolean 
 j_backend_smd_insert (JBackend* backend, gchar const* namespace,gchar const* key, bson_t const* node)
 {
@@ -689,23 +707,22 @@ j_backend_smd_get (JBackend* backend, gchar const* namespace,gchar const* key, b
 
 
 gboolean 
-j_backend_smd_search (JBackend* backend, bson_t* search_args, gpointer* data)
+j_backend_smd_get_all_namespaces (JBackend* backend,bson_t* namespaces)
 {
 	gboolean ret;
 
 	g_return_val_if_fail(backend != NULL, FALSE);
 	g_return_val_if_fail(backend->type == J_BACKEND_TYPE_SMD, FALSE);
-	g_return_val_if_fail(search_args != NULL, FALSE);
 
 	j_trace_enter("smd_search",NULL);
-	ret = backend->smd.backend_search(search_args,data);
+	ret = backend->smd.backend_get_all_namespaces(namespaces);
 	j_trace_leave("smd_search");
 
 	return ret;
 }
 
 gboolean 
-j_backend_smd_search_namespace (JBackend* backend, bson_t* search_args, gpointer* data, gchar const* namespace)
+j_backend_smd_search (JBackend* backend, bson_t* search_args, gpointer* data, gchar const* namespace)
 {
 	gboolean ret;
 
@@ -714,9 +731,9 @@ j_backend_smd_search_namespace (JBackend* backend, bson_t* search_args, gpointer
 	g_return_val_if_fail(search_args != NULL, FALSE);
 	g_return_val_if_fail(namespace != NULL, FALSE);
 
-	j_trace_enter("smd_search_namespace","%s", namespace);
-	ret = backend->smd.backend_search_namespace(search_args,data,namespace);
-	j_trace_leave("smd_search_namespace");
+	j_trace_enter("smd_search","%s", namespace);
+	ret = backend->smd.backend_search(search_args,data,namespace);
+	j_trace_leave("smd_search");
 
 	return ret;	
 }
